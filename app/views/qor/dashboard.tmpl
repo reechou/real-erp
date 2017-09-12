@@ -1,0 +1,54 @@
+<div class="qor-page__body">
+  {{render "shared/flashes"}}
+  {{render "shared/errors"}}
+
+  <div class="qor-section introduction">
+    <h5>REAL 微商 ERP系统</h5>
+  </div>
+
+  <!-- if have table please add qor-section__table className -->
+  <div class="qor-section qor-section__table qor-theme-slideout">
+    <div class="qor-section__header">
+      <h4 class="qor-section-title">{{t "最近订单"}}</h4>
+    </div>
+    <div class="qor-section__body qor-table-container">
+      {{render_latest_order .}}
+    </div>
+  </div>
+
+  <div class="qor-section reports">
+    <div class="qor-section__header">
+      <h4 class="qor-section-title">{{t "数据统计"}}</h4>
+    </div>
+
+    <div class="mdl-grid reports-daterange">
+      <div class="mdl-cell">
+        <input class="mdl-textfield__input" id="startDate" type="text" data-toggle="qor.datepicker" >
+      </div>
+      <div class="mdl-cell datepicker-separator">
+        -
+      </div>
+      <div class="mdl-cell">
+        <input class="mdl-textfield__input" id="endDate" type="text" data-toggle="qor.datepicker" >
+      </div>
+
+      <button class="mdl-button mdl-button--colored mdl-js-button mdl-js-ripple-effect j-update-record" > {{t "更新报表"}} </button>
+      <button class="mdl-button yesterday-reports" > {{t "昨日"}} </button>
+      <button class="mdl-button this-week-reports" > {{t "本周"}} </button>
+      <button class="mdl-button last-week-reports" > {{t "上周"}} </button>
+    </div>
+
+    <script src="/vendors/Chart.min.js"></script>
+    <div class="mdl-grid">
+      <div class="mdl-cell mdl-cell--6-col">
+        <h4 class="qor-section-title">{{t "订单数"}}</h4>
+        <canvas id="orders_report"></canvas>
+      </div>
+
+      <div class="mdl-cell mdl-cell--6-col">
+        <h4 class="qor-section-title">{{t "新增用户人数"}}</h4>
+        <canvas id="users_report"></canvas>
+      </div>
+    </div>
+  </div>
+</div>

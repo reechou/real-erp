@@ -1,0 +1,3 @@
+[qor-icon-name*="Products"] > a::before {
+  content: "\E2BF";
+}

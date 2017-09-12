@@ -1,0 +1,38 @@
+<link rel="stylesheet" media="all" href="{{.AuthURL "/assets/qor_auth.css"}}">
+
+<div class="container qor-auth">
+  <div class="qor-auth-box">
+    {{$flashes := .Flashes}}
+    {{if $flashes}}
+      <ul class="errors">
+        {{range $flash := $flashes}}
+          <li>{{$flash.Message}}</li>
+        {{end}}
+      </ul>
+    {{end}}
+
+    <h1>{{ t "login.Sign in" "Sign in" }}</h1>
+    <!-- <a class="signup-link" href="{{.AuthURL "register"}}">{{ t "login.Don't have an account? Click here to sign up." "Don't have an account? Click here to sign up." }}</a> -->
+    <a class="signup-link"></a>
+
+    <form action="{{.AuthURL "password/login"}}" method="POST">
+      <ul class="auth-form">
+        <li>
+          <label for="name">{{ t "login.name" }}</label>
+          <input type="text" id="name" name="login" placeholder="{{ t "auth.name" "name"}}" value="{{.FormValue "login"}}">
+        </li>
+
+        <li>
+          <label for="password">{{ t "login.password" }}</label>
+          <a class="forgot-password" href="{{.AuthURL "password/new"}}">{{ t "login.forgot password?" "Forgot Password?" }}</a>
+          <input type="password" class="form-control" id="password" name="password" placeholder="{{ t "auth.password" "Password"}}">
+        </li>
+
+        <li>
+          <button type="submit" class="button button__primary">{{ t "auth.Sign in" "Sign in" }}</button>
+        </li>
+      </ul>
+    </form>
+
+  </div>
+</div>

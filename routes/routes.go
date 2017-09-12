@@ -40,6 +40,8 @@ func Router() *http.ServeMux {
 				next.ServeHTTP(w, req.WithContext(ctx))
 			})
 		})
+		
+		router.Get("/", HomeIndex)
 
 		rootMux = http.NewServeMux()
 
@@ -55,4 +57,8 @@ func Router() *http.ServeMux {
 		WildcardRouter.AddHandler(router)
 	}
 	return rootMux
+}
+
+func HomeIndex(w http.ResponseWriter, req *http.Request) {
+	http.Redirect(w, req, "/admin", http.StatusSeeOther)
 }

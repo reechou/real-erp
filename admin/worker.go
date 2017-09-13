@@ -34,7 +34,7 @@ func getWorker() *worker.Worker {
 	ordersArgumentResource.AddProcessor(func(value interface{}, metaValues *resource.MetaValues, context *qor.Context) error {
 		if u, ok := value.(*ExportOrdersArgument); ok {
 			u.CurrentUser = context.CurrentUser.DisplayName()
-			if CurrentUserIfAdmin(context) {
+			if IsAdmin(context) {
 				u.IfAdmin = true
 			}
 		}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
+	"github.com/reechou/holmes"
 )
 
 type Order struct {
@@ -54,6 +55,10 @@ func (order *Order) AfterCreate(tx *gorm.DB) (err error) {
 	err = tx.Model(&order.User).
 		Select("buy_times", "last_buy_time").
 		Updates(map[string]interface{}{"buy_times": order.User.BuyTimes, "last_buy_time": time.Now()}).Error
+	if err != nil {
+		holmes.Error("update user buy info error: %v", err)
+		return
+	}
 	return
 }
 
@@ -74,7 +79,16 @@ var (
 
 func init() {
 	// Define Order's States
-	OrderState.Initial("paid")
+	OrderState.Initial("draft")
+	OrderState.State("paid").Enter(func(value interface{}, tx *gorm.DB) (err error) {
+		o := value.(*Order)
+		for i := 0; i < len(o.OrderItems); i++ {
+			if err = ItemState.Trigger("pay", &o.OrderItems[i], tx); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 	OrderState.State("shipped").Enter(func(value interface{}, tx *gorm.DB) (err error) {
 		tx.Model(value).UpdateColumn("shipped_at", time.Now())
 
@@ -118,16 +132,19 @@ func init() {
 		return nil
 	})
 
+	OrderState.Event("pay").To("paid").From("draft")
 	OrderState.Event("ship").To("shipped").From("paid")
 	OrderState.Event("complete").To("completed").From("shipped")
 	OrderState.Event("return").To("returned").From("shipped", "completed")
 
 	// Define ItemItem's States
-	ItemState.Initial("paid")
+	ItemState.Initial("draft")
+	ItemState.State("paid")
 	ItemState.State("shipped")
 	ItemState.State("completed")
 	ItemState.State("returned")
-
+	
+	ItemState.Event("pay").To("paid").From("draft")
 	ItemState.Event("ship").To("shipped").From("paid")
 	ItemState.Event("complete").To("completed").From("shipped")
 	ItemState.Event("return").To("returned").From("shipped", "completed")

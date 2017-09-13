@@ -18,7 +18,7 @@ func ReportsDataHandler(context *admin.Context) {
 	startDate := context.Request.URL.Query().Get("startDate")
 	endDate := context.Request.URL.Query().Get("endDate")
 
-	if CurrentUserIfAdmin(context.Context) {
+	if IsAdmin(context.Context) {
 		charts.Orders = models.GetChartData("orders", startDate, endDate, "")
 		charts.Users = models.GetChartData("users", startDate, endDate, "")
 	} else {

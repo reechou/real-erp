@@ -191,7 +191,7 @@ func InitAdmin() {
 	user.Scope(&admin.Scope{
 		Default: true,
 		Handler: func(db *gorm.DB, context *qor.Context) *gorm.DB {
-			if CurrentUserIfAdmin(context) {
+			if IsAdmin(context) {
 				return db
 			}
 			return db.Where("seller = ?", context.CurrentUser.DisplayName())
@@ -293,6 +293,8 @@ func InitAdmin() {
 			if o.ID == 0 {
 				// create
 				o.Seller = context.CurrentUser.DisplayName()
+				models.OrderState.Trigger("pay", o, context.DB)
+				//holmes.Debug("order processor: %+v", o)
 			}
 		}
 		return nil
@@ -301,7 +303,7 @@ func InitAdmin() {
 	order.Scope(&admin.Scope{
 		Default: true,
 		Handler: func(db *gorm.DB, context *qor.Context) *gorm.DB {
-			if CurrentUserIfAdmin(context) {
+			if IsAdmin(context) {
 				return db
 			}
 			return db.Where("seller = ?", context.CurrentUser.DisplayName())
@@ -359,7 +361,7 @@ func InitAdmin() {
 		},
 		Visible: func(record interface{}, context *admin.Context) bool {
 			if order, ok := record.(*models.Order); ok {
-				return order.State == ""
+				return order.State == "paid"
 			}
 			return false
 		},

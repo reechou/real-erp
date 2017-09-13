@@ -34,6 +34,7 @@ type OrderItem struct {
 	ProductVariation   ProductVariation
 	Quantity           uint    `cartitem:"Quantity"`
 	Price              float32 // 总价
+	Seller             string  `gorm:"index"`
 	transition.Transition
 }
 
@@ -45,6 +46,26 @@ func (order *Order) Amount() (amount float32) {
 }
 
 func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
+	order.PaymentAmount = order.Amount()
+	return
+}
+
+func (order *Order) BeforeUpdate(tx *gorm.DB) (err error) {
+	if order.State == "returned" {
+		// 退货, 返还库存
+		err = tx.Model(order).Related(&order.OrderItems).Error
+		if err != nil {
+			holmes.Error("before update get order items error: %v", err)
+			return
+		}
+		for _, v := range order.OrderItems {
+			// 返还库存
+			err = tx.Table("product_variations").
+				Where("id = ?", v.ProductVariationID).
+				UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", v.Quantity)).Error
+		}
+		return
+	}
 	order.PaymentAmount = order.Amount()
 	return
 }
@@ -62,13 +83,75 @@ func (order *Order) AfterCreate(tx *gorm.DB) (err error) {
 	return
 }
 
+func (order *Order) BeforeDelete(tx *gorm.DB) (err error) {
+	err = tx.Model(order).Related(&order.OrderItems).Error
+	if err != nil {
+		holmes.Error("before delete get order items error: %v", err)
+		return
+	}
+	for _, v := range order.OrderItems {
+		if v.ID == 0 {
+			continue
+		}
+		tx.Delete(&v)
+		// 返还库存
+		err = tx.Table("product_variations").
+			Where("id = ?", v.ProductVariationID).
+			UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", v.Quantity)).Error
+	}
+	return
+}
+
+func (orderItem *OrderItem) BeforeUpdate(tx *gorm.DB) (err error) {
+	oldOrderItem := new(OrderItem)
+	tx.First(oldOrderItem, orderItem.ID)
+	//holmes.Debug("old: %+v new: %+v", oldOrderItem, orderItem)
+	if orderItem.ProductVariation.ID != 0 {
+		rowsAffected := tx.Table("product_variations").
+			Where("id = ? AND available_quantity >= ?", orderItem.ProductVariation.ID, orderItem.Quantity).
+			UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", orderItem.Quantity)).RowsAffected
+		if rowsAffected == 0 {
+			err = errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
+			return
+		}
+		orderItem.ProductVariation.AvailableQuantity -= orderItem.Quantity
+
+		tx.Table("product_variations").
+			Where("id = ?", oldOrderItem.ProductVariationID).
+			UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", oldOrderItem.Quantity))
+	} else {
+		if orderItem.Quantity > oldOrderItem.Quantity {
+			addQuantity := orderItem.Quantity - oldOrderItem.Quantity
+			rowsAffected := tx.Table("product_variations").
+				Where("id = ? AND available_quantity >= ?", orderItem.ProductVariationID, addQuantity).
+				UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", addQuantity)).RowsAffected
+			if rowsAffected == 0 {
+				err = errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
+				return
+			}
+		} else if orderItem.Quantity < oldOrderItem.Quantity {
+			tx.Table("product_variations").
+				Where("id = ?", orderItem.ProductVariationID).
+				UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", oldOrderItem.Quantity-orderItem.Quantity))
+		}
+	}
+	return
+}
+
 func (orderItem *OrderItem) AfterCreate(tx *gorm.DB) (err error) {
 	if orderItem.ProductVariation.AvailableQuantity < orderItem.Quantity {
 		return errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
 	}
 	// 减库存
-	orderItem.ProductVariation.AvailableQuantity -= orderItem.Quantity
-	err = tx.Select("available_quantity").Save(&orderItem.ProductVariation).Error
+	rowsAffected := tx.Table("product_variations").
+		Where("id = ? AND available_quantity >= ?", orderItem.ProductVariationID, orderItem.Quantity).
+		UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", orderItem.Quantity)).RowsAffected
+	if rowsAffected == 0 {
+		err = errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
+		return
+	}
+	//orderItem.ProductVariation.AvailableQuantity -= orderItem.Quantity
+	//err = tx.Select("available_quantity").Save(&orderItem.ProductVariation).Error
 	return
 }
 
@@ -143,7 +226,7 @@ func init() {
 	ItemState.State("shipped")
 	ItemState.State("completed")
 	ItemState.State("returned")
-	
+
 	ItemState.Event("pay").To("paid").From("draft")
 	ItemState.Event("ship").To("shipped").From("paid")
 	ItemState.Event("complete").To("completed").From("shipped")

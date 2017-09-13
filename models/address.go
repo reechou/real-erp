@@ -21,5 +21,5 @@ func (address Address) Stringify() string {
 	if address.City == "" && address.Province == "" {
 		return address.AddressDetail
 	}
-	return fmt.Sprintf("%v, %v, %v", address.AddressDetail, address.City, address.Province)
+	return fmt.Sprintf("%v, %v, %v", address.Province, address.City, address.AddressDetail)
 }

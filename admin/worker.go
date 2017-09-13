@@ -4,22 +4,22 @@ import (
 	"fmt"
 	"path"
 	"time"
-	
+
 	"github.com/jinzhu/gorm"
+	"github.com/qor/admin"
 	"github.com/qor/exchange"
 	"github.com/qor/exchange/backends/csv"
 	"github.com/qor/qor"
-	"github.com/qor/worker"
-	"github.com/qor/admin"
-	"github.com/qor/roles"
 	"github.com/qor/qor/resource"
+	"github.com/qor/roles"
+	"github.com/qor/worker"
 
 	"github.com/reechou/real-erp/models"
 )
 
 func getWorker() *worker.Worker {
 	Worker := worker.New()
-	
+
 	type ExportOrdersArgument struct {
 		CurrentUser string
 		IfAdmin     bool
@@ -48,7 +48,7 @@ func getWorker() *worker.Worker {
 			qorJob.AddLog("导出订单中...")
 			orderArg := arg.(*ExportOrdersArgument)
 			qorJob.AddLog(fmt.Sprintf("订单查询: %+v", orderArg))
-			
+
 			var db *gorm.DB
 			var fileName string
 			if orderArg.IfAdmin {

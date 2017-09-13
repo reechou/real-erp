@@ -9,8 +9,10 @@ import (
 )
 
 type Charts struct {
-	Orders []models.Chart
-	Users  []models.Chart
+	Orders   []models.Chart
+	Users    []models.Chart
+	Quantity []models.Chart
+	Amount   []models.Chart
 }
 
 func ReportsDataHandler(context *admin.Context) {
@@ -21,9 +23,13 @@ func ReportsDataHandler(context *admin.Context) {
 	if IsAdmin(context.Context) {
 		charts.Orders = models.GetChartData("orders", startDate, endDate, "")
 		charts.Users = models.GetChartData("users", startDate, endDate, "")
+		charts.Quantity = models.GetChartDataOfSum("order_items", "quantity", startDate, endDate, "")
+		charts.Amount = models.GetChartDataOfSum("order_items", "price", startDate, endDate, "")
 	} else {
 		charts.Orders = models.GetChartData("orders", startDate, endDate, context.CurrentUser.DisplayName())
 		charts.Users = models.GetChartData("users", startDate, endDate, context.CurrentUser.DisplayName())
+		charts.Quantity = models.GetChartDataOfSum("order_items", "quantity", startDate, endDate, context.CurrentUser.DisplayName())
+		charts.Amount = models.GetChartDataOfSum("order_items", "price", startDate, endDate, context.CurrentUser.DisplayName())
 	}
 
 	b, _ := json.Marshal(charts)

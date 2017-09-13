@@ -1,5 +1,5 @@
-var OrderChart,UsersChart;
-function RenderChart(ordersData, usersData) {
+var OrderChart,UsersChart,QuantityChart,AmountChart;
+function RenderChart(ordersData, usersData, quantityData, amountData) {
     Chart.defaults.global.responsive = true;
 
     var orderDateLables = [];
@@ -27,6 +27,32 @@ function RenderChart(ordersData, usersData) {
     var users_context = document.getElementById("users_report").getContext("2d");
     var users_data = ChartData(usersDateLables,usersCounts);
     UsersChart = new Chart(users_context).Bar(users_data, "");
+
+    var quantityDateLables = [];
+    var quantityCounts = [];
+    for (var i = 0; i < quantityData.length; i++) {
+        quantityDateLables.push(quantityData[i].Date.substring(5,10));
+        quantityCounts.push(quantityData[i].Total)
+    }
+    if(QuantityChart){
+        QuantityChart.destroy();
+    }
+    var quantity_context = document.getElementById("quantity_report").getContext("2d");
+    var quantity_data = ChartData(quantityDateLables,quantityCounts);
+    QuantityChart = new Chart(quantity_context).Line(quantity_data, "");
+
+    var amountDateLables = [];
+    var amountCounts = [];
+    for (var i = 0; i < amountData.length; i++) {
+        amountDateLables.push(amountData[i].Date.substring(5,10));
+        amountCounts.push(amountData[i].Total)
+    }
+    if(AmountChart){
+        AmountChart.destroy();
+    }
+    var amount_context = document.getElementById("amount_report").getContext("2d");
+    var amount_data = ChartData(amountDateLables,amountCounts);
+    AmountChart = new Chart(amount_context).Line(amount_data, "");
 }
 
 function ChartData(lables, counts) {
@@ -79,7 +105,7 @@ $(document).ready(function() {
   $("#endDate").val(yesterday.Format("yyyy-MM-dd"));
   $(".j-update-record").click(function(){
     $.getJSON("/admin/reports.json",{startDate:$("#startDate").val(), endDate:$("#endDate").val()},function(jsonData){
-      RenderChart(jsonData.Orders,jsonData.Users);
+      RenderChart(jsonData.Orders,jsonData.Users,jsonData.Quantity,jsonData.Amount);
     });
   });
   $(".j-update-record").click();

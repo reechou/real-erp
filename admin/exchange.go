@@ -30,7 +30,10 @@ func InitExchange() {
 	OrderExchange.Meta(&exchange.Meta{Name: "ID", Header: "订单编号"})
 	OrderExchange.Meta(&exchange.Meta{Name: "ShippingAddress.ContactName", Header: "收件人"})
 	OrderExchange.Meta(&exchange.Meta{Name: "ShippingAddress.Phone", Header: "手机"})
-	OrderExchange.Meta(&exchange.Meta{Name: "ShippingAddress.AddressDetail", Header: "地址"})
+	OrderExchange.Meta(&exchange.Meta{
+		Name:   "ShippingAddress.AddressDetail",
+		Header: "地址",
+	})
 
 	OrderExchange.AddValidator(func(record interface{}, metaValues *resource.MetaValues, context *qor.Context) error {
 		if utils.ToString(metaValues.Get("ShippingAddress.ContactName").Value) == "" {

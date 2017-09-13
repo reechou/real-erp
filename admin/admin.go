@@ -47,9 +47,17 @@ func InitAdmin() {
 
 	category := Admin.AddResource(&models.Category{}, &admin.Config{Menu: []string{"产品管理"}, Name: "分类", Priority: -3})
 	category.Meta(&admin.Meta{Name: "Name", Label: "分类名"})
+	category.Meta(&admin.Meta{Name: "Code", Label: "代码"})
 
 	// Add ProductImage as Media Library
-	productImagesResource := Admin.AddResource(&models.ProductImage{}, &admin.Config{Menu: []string{"产品管理"}, Name: "图片", Priority: -2, Invisible: true})
+	productImagesResource := Admin.AddResource(&models.ProductImage{}, &admin.Config{
+		Menu:       []string{"产品管理"},
+		Name:       "图片",
+		Priority:   -2,
+		Permission: roles.Allow(roles.CRUD, UserPermissions[USER_PERMISSION_ADMIN]),
+	})
+	productImagesResource.Meta(&admin.Meta{Name: "Title", Label: "图片名"})
+	productImagesResource.Meta(&admin.Meta{Name: "Category", Label: "所属分类"})
 	productImagesResource.Filter(&admin.Filter{
 		Name:       "SelectedType",
 		Label:      "资源类型",
@@ -293,6 +301,9 @@ func InitAdmin() {
 			if o.ID == 0 {
 				// create
 				o.Seller = context.CurrentUser.DisplayName()
+				for i := 0; i < len(o.OrderItems); i++ {
+					o.OrderItems[i].Seller = context.CurrentUser.DisplayName()
+				}
 				models.OrderState.Trigger("pay", o, context.DB)
 				//holmes.Debug("order processor: %+v", o)
 			}
@@ -402,17 +413,17 @@ func InitAdmin() {
 		},
 		Visible: func(record interface{}, context *admin.Context) bool {
 			if order, ok := record.(*models.Order); ok {
-				return order.State == "completed"
+				return order.State == "completed" || order.State == "shipped"
 			}
 			return false
 		},
 		Modes: []string{"show", "edit", "menu_item"},
 	})
 
-	order.IndexAttrs("User", "PaymentAmount", "ShippedAt", "State", "ShippingAddress", "CreatedAt")
+	order.IndexAttrs("User", "PaymentAmount", "ShippedAt", "State", "ShippingAddress", "CreatedAt", "Seller")
 	order.NewAttrs("-AbandonedReason", "-PaymentAmount", "-CreatedAt", "-ShippedAt", "-CompletedAt", "-ReturnedAt")
 	order.EditAttrs("-AbandonedReason", "-State", "-CreatedAt", "-ShippedAt", "-CompletedAt", "-ReturnedAt")
-	order.ShowAttrs("-AbandonedReason", "-State", "-CreatedAt",)
+	order.ShowAttrs("-AbandonedReason", "-State", "-CreatedAt")
 	order.SearchAttrs("User.Name", "User.Wechat", "ShippingAddress.ContactName", "ShippingAddress.AddressDetail")
 
 	activity.Register(order)

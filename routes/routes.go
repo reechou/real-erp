@@ -40,7 +40,7 @@ func Router() *http.ServeMux {
 				next.ServeHTTP(w, req.WithContext(ctx))
 			})
 		})
-		
+
 		router.Get("/", HomeIndex)
 
 		rootMux = http.NewServeMux()

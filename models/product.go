@@ -117,7 +117,7 @@ func ProductVariations() []ProductVariation {
 }
 
 func (productVariation ProductVariation) ProductVariationInfo() string {
-	return fmt.Sprintf("%s (%.2f-%d)", productVariation.SKU, productVariation.Price, productVariation.AvailableQuantity)
+	return fmt.Sprintf("%s (￥%.2f-%d)", productVariation.SKU, productVariation.Price, productVariation.AvailableQuantity)
 }
 
 func (productVariation ProductVariation) Stringify() string {

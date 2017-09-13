@@ -116,7 +116,7 @@ func InitAdmin() {
 	product.UseTheme("grid")
 	product.Meta(&admin.Meta{Name: "Name", Label: "名字"})
 	product.Meta(&admin.Meta{Name: "Code", Label: "代码"})
-	product.Meta(&admin.Meta{Name: "Price", Label: "价格"})
+	product.Meta(&admin.Meta{Name: "Price", Label: "价格", Permission: roles.Deny(roles.CRUD, roles.Anyone)})
 	product.Meta(&admin.Meta{Name: "Description", Label: "商品详情"})
 	product.Meta(&admin.Meta{Name: "Category", Label: "商品分类"})
 	product.Meta(&admin.Meta{Name: "Variations", Label: "商品sku"})

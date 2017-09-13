@@ -18,12 +18,12 @@
     <form action="{{.AuthURL "password/login"}}" method="POST">
       <ul class="auth-form">
         <li>
-          <label for="name">{{ t "login.name" }}</label>
+          <label for="name">{{ t "login.name" "Name:" }}</label>
           <input type="text" id="name" name="login" placeholder="{{ t "auth.name" "name"}}" value="{{.FormValue "login"}}">
         </li>
 
         <li>
-          <label for="password">{{ t "login.password" }}</label>
+          <label for="password">{{ t "login.password" "Password:" }}</label>
           <a class="forgot-password" href="{{.AuthURL "password/new"}}">{{ t "login.forgot password?" "Forgot Password?" }}</a>
           <input type="password" class="form-control" id="password" name="password" placeholder="{{ t "auth.password" "Password"}}">
         </li>

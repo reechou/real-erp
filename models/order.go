@@ -51,13 +51,13 @@ func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 func (order *Order) BeforeUpdate(tx *gorm.DB) (err error) {
+	// 退货, 返还库存
+	err = tx.Model(order).Related(&order.OrderItems).Error
+	if err != nil {
+		holmes.Error("before update get order items error: %v", err)
+		return
+	}
 	if order.State == "returned" {
-		// 退货, 返还库存
-		err = tx.Model(order).Related(&order.OrderItems).Error
-		if err != nil {
-			holmes.Error("before update get order items error: %v", err)
-			return
-		}
 		for _, v := range order.OrderItems {
 			// 返还库存
 			err = tx.Table("product_variations").
@@ -66,6 +66,7 @@ func (order *Order) BeforeUpdate(tx *gorm.DB) (err error) {
 		}
 		return
 	}
+	
 	order.PaymentAmount = order.Amount()
 	return
 }

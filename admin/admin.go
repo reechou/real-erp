@@ -9,7 +9,7 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/qor/activity"
 	"github.com/qor/admin"
-	"github.com/qor/i18n/exchange_actions"
+	//"github.com/qor/i18n/exchange_actions"
 	"github.com/qor/media"
 	"github.com/qor/media/media_library"
 	"github.com/qor/qor"
@@ -433,7 +433,7 @@ func InitAdmin() {
 	Admin.AddResource(i18n.I18n, &admin.Config{Menu: []string{"附加工具"}, Priority: 1, Invisible: true})
 
 	Worker := getWorker()
-	exchange_actions.RegisterExchangeJobs(i18n.I18n, Worker)
+	//exchange_actions.RegisterExchangeJobs(i18n.I18n, Worker)
 	Admin.AddResource(Worker, &admin.Config{Menu: []string{"附加工具"}, Name: "任务"})
 
 	initFuncMap()

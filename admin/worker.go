@@ -13,6 +13,7 @@ import (
 	"github.com/qor/qor/resource"
 	"github.com/qor/roles"
 	"github.com/qor/worker"
+	"github.com/qor/media/oss"
 
 	"github.com/reechou/real-erp/models"
 )
@@ -66,6 +67,9 @@ func getWorker() *worker.Worker {
 					o := progress.Value.(*models.Order)
 					qorJob.AddLog(fmt.Sprintf("%v/%v 正在导出订单, 邮寄信息: [%v - %v - %v]",
 						progress.Current, progress.Total, o.ShippingAddress.ContactName, o.ShippingAddress.Phone, o.ShippingAddress.AddressDetail))
+					if progress.Current == progress.Total {
+						qorJob.AddLog("导出订单已完成")
+					}
 					return nil
 				},
 			); err != nil {
@@ -76,6 +80,76 @@ func getWorker() *worker.Worker {
 		},
 		Resource: ordersArgumentResource,
 	})
-
+	
+	type ImportOrdersArgument struct {
+		File oss.OSS
+	}
+	
+	Worker.RegisterJob(&worker.Job{
+		Name:  "导入订单",
+		Group: "订单管理",
+		Handler: func(arg interface{}, qorJob worker.QorJobInterface) error {
+			qorJob.AddLog("导入订单 快递单号 中...")
+			orderArg := arg.(*ImportOrdersArgument)
+			qorJob.AddLog(fmt.Sprintf("import orders file: %v", orderArg.File.URL()))
+			
+			context := &qor.Context{DB: models.DB}
+			var errorCount uint
+			if err := OrderExchange.Import(
+				csv.New(path.Join("public", orderArg.File.URL())),
+				context,
+				func(progress exchange.Progress) error {
+					var cells = []worker.TableCell{
+						{Value: fmt.Sprint(progress.Current)},
+					}
+					
+					var hasError bool
+					for _, cell := range progress.Cells {
+						var tableCell = worker.TableCell{
+							Value: fmt.Sprint(cell.Value),
+						}
+						
+						if cell.Error != nil {
+							hasError = true
+							errorCount++
+							tableCell.Error = cell.Error.Error()
+						}
+						
+						cells = append(cells, tableCell)
+					}
+					
+					if hasError {
+						if errorCount == 1 {
+							var headerCells = []worker.TableCell{
+								{Value: "Line No."},
+							}
+							for _, cell := range progress.Cells {
+								headerCells = append(headerCells, worker.TableCell{
+									Value: cell.Header,
+								})
+							}
+							qorJob.AddResultsRow(headerCells...)
+						}
+						
+						qorJob.AddResultsRow(cells...)
+					}
+					
+					o := progress.Value.(*models.Order)
+					
+					qorJob.SetProgress(uint(float32(progress.Current) / float32(progress.Total) * 100))
+					qorJob.AddLog(fmt.Sprintf("%d/%d 导入订单: %v %v", progress.Current, progress.Total, o.ID, o.TrackingNumber))
+					if progress.Current == progress.Total {
+						qorJob.AddLog("导入订单已完成")
+					}
+					return nil
+				},
+			); err != nil {
+				qorJob.AddLog(err.Error())
+			}
+			return nil
+		},
+		Resource: Admin.NewResource(&ImportOrdersArgument{}),
+	})
+	
 	return Worker
 }

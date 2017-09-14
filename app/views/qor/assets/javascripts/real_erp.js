@@ -58,7 +58,7 @@ function RenderChart(ordersData, usersData, quantityData, amountData, sellerPerf
     var sellerPerformanceCounts = [];
     for (var i = 0; i < sellerPerformanceData.length; i++) {
         sellerPerformanceLables.push(sellerPerformanceData[i].Seller);
-        sellerPerformanceCounts.push(amountData[i].Total)
+        sellerPerformanceCounts.push(sellerPerformanceData[i].Total)
     }
     if(SellerPerformanceChat){
         SellerPerformanceChat.destroy();

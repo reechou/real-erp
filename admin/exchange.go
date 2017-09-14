@@ -48,4 +48,16 @@ func InitExchange() {
 		}
 		return nil
 	})
+	OrderExchangeImport.AddProcessor(func(value interface{}, metaValues *resource.MetaValues, context *qor.Context) error {
+		if o, ok := value.(*models.Order); ok {
+			if o.ID != 0 {
+				// update
+				// trigger ship
+				if err := models.OrderState.Trigger("ship", o, context.DB, "tracking number "+o.TrackingNumber); err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
 }

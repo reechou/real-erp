@@ -51,23 +51,12 @@ func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
 }
 
 func (order *Order) BeforeUpdate(tx *gorm.DB) (err error) {
-	// 退货, 返还库存
-	err = tx.Model(order).Related(&order.OrderItems).Error
-	if err != nil {
-		holmes.Error("before update get order items error: %v", err)
-		return
-	}
-	if order.State == "returned" {
-		for _, v := range order.OrderItems {
-			// 返还库存
-			err = tx.Table("product_variations").
-				Where("id = ?", v.ProductVariationID).
-				UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", v.Quantity)).Error
-		}
-		return
+	if len(order.OrderItems) != 0 {
+		order.PaymentAmount = order.Amount()
 	}
 	
-	order.PaymentAmount = order.Amount()
+	//holmes.Debug("order BeforeUpdate: %+v", order)
+	
 	return
 }
 
@@ -106,7 +95,7 @@ func (order *Order) BeforeDelete(tx *gorm.DB) (err error) {
 func (orderItem *OrderItem) BeforeUpdate(tx *gorm.DB) (err error) {
 	oldOrderItem := new(OrderItem)
 	tx.First(oldOrderItem, orderItem.ID)
-	//holmes.Debug("old: %+v new: %+v", oldOrderItem, orderItem)
+	//holmes.Debug("OrderItem BeforeUpdate old: %+v new: %+v", oldOrderItem, orderItem)
 	if orderItem.ProductVariation.ID != 0 {
 		rowsAffected := tx.Table("product_variations").
 			Where("id = ? AND available_quantity >= ?", orderItem.ProductVariation.ID, orderItem.Quantity).
@@ -209,6 +198,12 @@ func init() {
 		for _, item := range orderItems {
 			if err := ItemState.Trigger("return", &item, tx); err == nil {
 				if err = tx.Select("state").Save(&item).Error; err != nil {
+					return err
+				}
+				// 返还库存
+				if err = tx.Table("product_variations").
+					Where("id = ?", item.ProductVariationID).
+					UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", item.Quantity)).Error; err != nil {
 					return err
 				}
 			}

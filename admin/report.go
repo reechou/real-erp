@@ -9,10 +9,11 @@ import (
 )
 
 type Charts struct {
-	Orders   []models.Chart
-	Users    []models.Chart
-	Quantity []models.Chart
-	Amount   []models.Chart
+	Orders            []models.Chart
+	Users             []models.Chart
+	Quantity          []models.Chart
+	Amount            []models.Chart
+	SellerPerformance []models.UserChart
 }
 
 func ReportsDataHandler(context *admin.Context) {
@@ -31,6 +32,7 @@ func ReportsDataHandler(context *admin.Context) {
 		charts.Quantity = models.GetChartDataOfSum("order_items", "quantity", startDate, endDate, context.CurrentUser.DisplayName())
 		charts.Amount = models.GetChartDataOfSum("order_items", "price", startDate, endDate, context.CurrentUser.DisplayName())
 	}
+	charts.SellerPerformance = models.GetUserChartDataOfSum("order_items", "price", startDate, endDate)
 
 	b, _ := json.Marshal(charts)
 	context.Writer.Write(b)

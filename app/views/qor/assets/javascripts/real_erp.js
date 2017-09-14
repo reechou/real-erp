@@ -1,5 +1,5 @@
-var OrderChart,UsersChart,QuantityChart,AmountChart;
-function RenderChart(ordersData, usersData, quantityData, amountData) {
+var OrderChart,UsersChart,QuantityChart,AmountChart,SellerPerformanceChat;
+function RenderChart(ordersData, usersData, quantityData, amountData, sellerPerformanceData) {
     Chart.defaults.global.responsive = true;
 
     var orderDateLables = [];
@@ -53,6 +53,19 @@ function RenderChart(ordersData, usersData, quantityData, amountData) {
     var amount_context = document.getElementById("amount_report").getContext("2d");
     var amount_data = ChartData(amountDateLables,amountCounts);
     AmountChart = new Chart(amount_context).Line(amount_data, "");
+
+    var sellerPerformanceLables = [];
+    var sellerPerformanceCounts = [];
+    for (var i = 0; i < sellerPerformanceData.length; i++) {
+        sellerPerformanceLables.push(sellerPerformanceData[i].Seller);
+        sellerPerformanceCounts.push(amountData[i].Total)
+    }
+    if(SellerPerformanceChat){
+        SellerPerformanceChat.destroy();
+    }
+    var seller_performance_context = document.getElementById("seller_performance_report").getContext("2d");
+    var seller_performance_data = ChartData(sellerPerformanceLables,sellerPerformanceCounts);
+    SellerPerformanceChat = new Chart(seller_performance_context).Bar(seller_performance_data, "");
 }
 
 function ChartData(lables, counts) {
@@ -105,7 +118,7 @@ $(document).ready(function() {
   $("#endDate").val(yesterday.Format("yyyy-MM-dd"));
   $(".j-update-record").click(function(){
     $.getJSON("/admin/reports.json",{startDate:$("#startDate").val(), endDate:$("#endDate").val()},function(jsonData){
-      RenderChart(jsonData.Orders,jsonData.Users,jsonData.Quantity,jsonData.Amount);
+      RenderChart(jsonData.Orders,jsonData.Users,jsonData.Quantity,jsonData.Amount,jsonData.SellerPerformance);
     });
   });
   $(".j-update-record").click();

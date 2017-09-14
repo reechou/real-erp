@@ -95,7 +95,7 @@ func getWorker() *worker.Worker {
 			
 			context := &qor.Context{DB: models.DB}
 			var errorCount uint
-			if err := OrderExchange.Import(
+			if err := OrderExchangeImport.Import(
 				csv.New(path.Join("public", orderArg.File.URL())),
 				context,
 				func(progress exchange.Progress) error {
@@ -137,7 +137,7 @@ func getWorker() *worker.Worker {
 					o := progress.Value.(*models.Order)
 					
 					qorJob.SetProgress(uint(float32(progress.Current) / float32(progress.Total) * 100))
-					qorJob.AddLog(fmt.Sprintf("%d/%d 导入订单: %v %v", progress.Current, progress.Total, o.ID, o.TrackingNumber))
+					qorJob.AddLog(fmt.Sprintf("%d/%d 导入订单: %v %v %v", progress.Current, progress.Total, o.ID, o.Express, o.TrackingNumber))
 					if progress.Current == progress.Total {
 						qorJob.AddLog("导入订单已完成")
 					}

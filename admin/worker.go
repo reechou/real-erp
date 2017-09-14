@@ -18,16 +18,20 @@ import (
 	"github.com/reechou/real-erp/models"
 )
 
+var WorkerOrderState = []string{"all", "paid", "shipped", "completed", "returned"}
+
 func getWorker() *worker.Worker {
 	Worker := worker.New()
 
 	type ExportOrdersArgument struct {
 		CurrentUser string
 		IfAdmin     bool
+		State       string
 		StartTime   *time.Time
 		EndTime     *time.Time
 	}
 	ordersArgumentResource := Admin.NewResource(&ExportOrdersArgument{})
+	ordersArgumentResource.Meta(&admin.Meta{Name: "State", Config: &admin.SelectOneConfig{Collection: WorkerOrderState}, Label: "订单状态"})
 	ordersArgumentResource.Meta(&admin.Meta{Name: "StartTime", Label: "开始时间"})
 	ordersArgumentResource.Meta(&admin.Meta{Name: "EndTime", Label: "结束时间"})
 	ordersArgumentResource.Meta(&admin.Meta{Name: "CurrentUser", Permission: roles.Deny(roles.CRUD, roles.Anyone)})
@@ -53,11 +57,23 @@ func getWorker() *worker.Worker {
 			var db *gorm.DB
 			var fileName string
 			if orderArg.IfAdmin {
-				db = models.DB.Where("created_at > ? AND created_at < ?", orderArg.StartTime, orderArg.EndTime).Preload("ShippingAddress")
-				fileName = fmt.Sprintf("/downloads/admin_order.%v.csv", time.Now().Format("2006-01-02_15:04:05.999999"))
+				if orderArg.State == "all" {
+					db = models.DB.Where("created_at > ? AND created_at < ?", orderArg.StartTime, orderArg.EndTime).Preload("ShippingAddress")
+					fileName = fmt.Sprintf("/downloads/admin_order.%v.csv", time.Now().Format("2006-01-02_15:04:05.999999"))
+				} else {
+					db = models.DB.Where("created_at > ? AND created_at < ? AND state = ?", orderArg.StartTime, orderArg.EndTime, orderArg.State).Preload("ShippingAddress")
+					fileName = fmt.Sprintf("/downloads/admin_order.%v.csv", time.Now().Format("2006-01-02_15:04:05.999999"))
+				}
 			} else {
-				db = models.DB.Where("created_at > ? AND created_at < ? AND seller = ?", orderArg.StartTime, orderArg.EndTime, orderArg.CurrentUser).Preload("ShippingAddress")
-				fileName = fmt.Sprintf("/downloads/%v_order.%v.csv", orderArg.CurrentUser, time.Now().Format("2006-01-02_15:04:05.999999"))
+				if orderArg.State == "all" {
+					db = models.DB.Where("created_at > ? AND created_at < ? AND seller = ? AND state = ?",
+						orderArg.StartTime, orderArg.EndTime, orderArg.CurrentUser, orderArg.State).Preload("ShippingAddress")
+					fileName = fmt.Sprintf("/downloads/%v_order.%v.csv", orderArg.CurrentUser, time.Now().Format("2006-01-02_15:04:05.999999"))
+				} else {
+					db = models.DB.Where("created_at > ? AND created_at < ? AND seller = ?",
+						orderArg.StartTime, orderArg.EndTime, orderArg.CurrentUser).Preload("ShippingAddress")
+					fileName = fmt.Sprintf("/downloads/%v_order.%v.csv", orderArg.CurrentUser, time.Now().Format("2006-01-02_15:04:05.999999"))
+				}
 			}
 			context := &qor.Context{DB: db}
 			if err := OrderExchange.Export(

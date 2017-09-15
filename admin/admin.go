@@ -260,13 +260,13 @@ func InitAdmin() {
 	order.Meta(&admin.Meta{Name: "ShippedAt", Type: "date", Label: "发货时间"})
 	order.Meta(&admin.Meta{Name: "CompletedAt", Type: "date", Label: "完成时间"})
 	order.Meta(&admin.Meta{Name: "ReturnedAt", Type: "date", Label: "退货时间"})
-	order.Meta(&admin.Meta{Name: "PaymentAmount", Label: "订单金额"})
-	order.Meta(&admin.Meta{Name: "Express", Label: "快递公司", Permission: roles.Deny(roles.Update, UserPermissions[USER_PERMISSION_MAINTAINER], UserPermissions[USER_PERMISSION_MEMBER]).Deny(roles.Create, UserPermissions[USER_PERMISSION_MAINTAINER], UserPermissions[USER_PERMISSION_MEMBER])})
-	order.Meta(&admin.Meta{Name: "TrackingNumber", Label: "快递单号", Permission: roles.Deny(roles.Update, UserPermissions[USER_PERMISSION_MAINTAINER], UserPermissions[USER_PERMISSION_MEMBER]).Deny(roles.Create, UserPermissions[USER_PERMISSION_MAINTAINER], UserPermissions[USER_PERMISSION_MEMBER])})
+	order.Meta(&admin.Meta{Name: "PaymentAmount", Label: "订单金额", Permission: roles.Allow(roles.Read, roles.Anyone)})
+	order.Meta(&admin.Meta{Name: "Express", Label: "快递公司", Permission: roles.Allow(roles.Read, roles.Anyone)})
+	order.Meta(&admin.Meta{Name: "TrackingNumber", Label: "快递单号", Permission: roles.Allow(roles.Read, roles.Anyone)})
 	order.Meta(&admin.Meta{Name: "User", Label: "用户"})
 	order.Meta(&admin.Meta{Name: "State", Label: "订单状态"})
 	order.Meta(&admin.Meta{Name: "CreatedAt", Label: "创建时间"})
-	order.Meta(&admin.Meta{Name: "Seller", Label: "销售员", Permission: roles.Allow(roles.CRUD, UserPermissions[USER_PERMISSION_ADMIN])})
+	order.Meta(&admin.Meta{Name: "Seller", Label: "销售员", Permission: roles.Allow(roles.Read, UserPermissions[USER_PERMISSION_ADMIN])})
 
 	orderItemMeta := order.Meta(&admin.Meta{Name: "OrderItems", Label: "订单商品"})
 	orderItemMetaResource := orderItemMeta.Resource
@@ -295,17 +295,28 @@ func InitAdmin() {
 			}},
 	)
 	orderItemMetaResource.NewAttrs(orderItemMetaResource.EditAttrs())
+	orderItemMetaResource.AddProcessor(func(value interface{}, metaValues *resource.MetaValues, context *qor.Context) error {
+		if oi, ok := value.(*models.OrderItem); ok {
+			if oi.ID == 0 {
+				// create
+				oi.Seller = context.CurrentUser.DisplayName()
+			}
+		}
+		return nil
+	})
 
 	order.AddProcessor(func(value interface{}, metaValues *resource.MetaValues, context *qor.Context) error {
 		if o, ok := value.(*models.Order); ok {
 			if o.ID == 0 {
 				// create
 				o.Seller = context.CurrentUser.DisplayName()
-				for i := 0; i < len(o.OrderItems); i++ {
-					o.OrderItems[i].Seller = context.CurrentUser.DisplayName()
-				}
 				models.OrderState.Trigger("pay", o, context.DB)
-				//holmes.Debug("order processor: %+v", o)
+			} else {
+				for i := 0; i < len(o.OrderItems); i++ {
+					if o.OrderItems[i].ID == 0 {
+						o.OrderItems[i].State = o.State
+					}
+				}
 			}
 		}
 		return nil
@@ -423,7 +434,7 @@ func InitAdmin() {
 	order.IndexAttrs("User", "PaymentAmount", "ShippedAt", "State", "ShippingAddress", "CreatedAt", "Seller")
 	order.NewAttrs("-AbandonedReason", "-PaymentAmount", "-CreatedAt", "-ShippedAt", "-CompletedAt", "-ReturnedAt")
 	order.EditAttrs("-AbandonedReason", "-State", "-CreatedAt", "-ShippedAt", "-CompletedAt", "-ReturnedAt")
-	order.ShowAttrs("-AbandonedReason", "-State", "-CreatedAt")
+	//order.ShowAttrs("-AbandonedReason", "-State", "-CreatedAt")
 	order.SearchAttrs("User.Name", "User.Wechat", "ShippingAddress.ContactName", "ShippingAddress.AddressDetail")
 
 	activity.Register(order)

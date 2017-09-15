@@ -1,6 +1,7 @@
 package models
 
 import (
+	"fmt"
 	"errors"
 	"time"
 
@@ -129,15 +130,18 @@ func (orderItem *OrderItem) BeforeUpdate(tx *gorm.DB) (err error) {
 }
 
 func (orderItem *OrderItem) AfterCreate(tx *gorm.DB) (err error) {
-	if orderItem.ProductVariation.AvailableQuantity < orderItem.Quantity {
-		return errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
+	if orderItem.ProductVariationID == 0 {
+		return errors.New("Please select the product.")
+	}
+	if orderItem.Quantity == 0 {
+		return
 	}
 	// 减库存
 	rowsAffected := tx.Table("product_variations").
 		Where("id = ? AND available_quantity >= ?", orderItem.ProductVariationID, orderItem.Quantity).
 		UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", orderItem.Quantity)).RowsAffected
 	if rowsAffected == 0 {
-		err = errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
+		err = errors.New(fmt.Sprintf("ProductVariation[%d]'s AvailableQuantity < OrderItem's Quantity[%d]", orderItem.ProductVariationID, orderItem.Quantity))
 		return
 	}
 	//orderItem.ProductVariation.AvailableQuantity -= orderItem.Quantity

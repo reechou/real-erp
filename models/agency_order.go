@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"errors"
 	"time"
-
+	
 	"github.com/jinzhu/gorm"
 	"github.com/qor/transition"
 	"github.com/reechou/holmes"
 )
 
-type Order struct {
+type AgencyOrder struct {
 	gorm.Model
-	UserID            uint
-	User              User
+	AgencyID          uint
+	Agency            Agency
 	PaymentAmount     float32
 	AbandonedReason   string
 	Express           string
@@ -23,14 +23,14 @@ type Order struct {
 	ReturnedAt        *time.Time
 	ShippingAddressID uint `form:"shippingaddress"`
 	ShippingAddress   Address
-	OrderItems        []OrderItem
+	AgencyOrderItems  []AgencyOrderItem
 	Seller            string `gorm:"index"`
 	transition.Transition
 }
 
-type OrderItem struct {
+type AgencyOrderItem struct {
 	gorm.Model
-	OrderID            uint
+	AgencyOrderID      uint
 	ProductVariationID uint `cartitem:"ProductVariationID"`
 	ProductVariation   ProductVariation
 	Quantity           uint    `cartitem:"Quantity"`
@@ -39,48 +39,46 @@ type OrderItem struct {
 	transition.Transition
 }
 
-func (order *Order) Amount() (amount float32) {
-	for _, orderItem := range order.OrderItems {
+func (order *AgencyOrder) Amount() (amount float32) {
+	for _, orderItem := range order.AgencyOrderItems {
 		amount += orderItem.Price
 	}
 	return
 }
 
-func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
+func (order *AgencyOrder) BeforeCreate(tx *gorm.DB) (err error) {
 	order.PaymentAmount = order.Amount()
 	return
 }
 
-func (order *Order) BeforeUpdate(tx *gorm.DB) (err error) {
-	if len(order.OrderItems) != 0 {
+func (order *AgencyOrder) BeforeUpdate(tx *gorm.DB) (err error) {
+	if len(order.AgencyOrderItems) != 0 {
 		order.PaymentAmount = order.Amount()
 	}
-	
-	//holmes.Debug("order BeforeUpdate: %+v", order)
 	
 	return
 }
 
-func (order *Order) AfterCreate(tx *gorm.DB) (err error) {
-	// 更新用户购买记录
-	order.User.BuyTimes++
-	err = tx.Model(&order.User).
-		Select("buy_times", "last_buy_time").
-		Updates(map[string]interface{}{"buy_times": order.User.BuyTimes, "last_buy_time": time.Now()}).Error
+func (order *AgencyOrder) AfterCreate(tx *gorm.DB) (err error) {
+	// 更新代理进货记录
+	order.Agency.PurchaseTimes++
+	err = tx.Model(&order.Agency).
+		Select("purchase_times", "last_purchase_time").
+		Updates(map[string]interface{}{"purchase_times": order.Agency.PurchaseTimes, "last_purchase_time": time.Now()}).Error
 	if err != nil {
-		holmes.Error("update user buy info error: %v", err)
+		holmes.Error("update agency purchase info error: %v", err)
 		return
 	}
 	return
 }
 
-func (order *Order) BeforeDelete(tx *gorm.DB) (err error) {
-	err = tx.Model(order).Related(&order.OrderItems).Error
+func (order *AgencyOrder) BeforeDelete(tx *gorm.DB) (err error) {
+	err = tx.Model(order).Related(&order.AgencyOrderItems).Error
 	if err != nil {
 		holmes.Error("before delete get order items error: %v", err)
 		return
 	}
-	for _, v := range order.OrderItems {
+	for _, v := range order.AgencyOrderItems {
 		if v.ID == 0 {
 			continue
 		}
@@ -93,10 +91,9 @@ func (order *Order) BeforeDelete(tx *gorm.DB) (err error) {
 	return
 }
 
-func (orderItem *OrderItem) BeforeUpdate(tx *gorm.DB) (err error) {
-	oldOrderItem := new(OrderItem)
+func (orderItem *AgencyOrderItem) BeforeUpdate(tx *gorm.DB) (err error) {
+	oldOrderItem := new(AgencyOrderItem)
 	tx.First(oldOrderItem, orderItem.ID)
-	//holmes.Debug("OrderItem BeforeUpdate old: %+v new: %+v", oldOrderItem, orderItem)
 	if orderItem.ProductVariation.ID != 0 {
 		rowsAffected := tx.Table("product_variations").
 			Where("id = ? AND available_quantity >= ?", orderItem.ProductVariation.ID, orderItem.Quantity).
@@ -106,7 +103,7 @@ func (orderItem *OrderItem) BeforeUpdate(tx *gorm.DB) (err error) {
 			return
 		}
 		orderItem.ProductVariation.AvailableQuantity -= orderItem.Quantity
-
+		
 		tx.Table("product_variations").
 			Where("id = ?", oldOrderItem.ProductVariationID).
 			UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", oldOrderItem.Quantity))
@@ -129,8 +126,7 @@ func (orderItem *OrderItem) BeforeUpdate(tx *gorm.DB) (err error) {
 	return
 }
 
-func (orderItem *OrderItem) AfterCreate(tx *gorm.DB) (err error) {
-	holmes.Debug("order item: %+v", orderItem)
+func (orderItem *AgencyOrderItem) AfterCreate(tx *gorm.DB) (err error) {
 	if orderItem.ProductVariationID == 0 {
 		return errors.New("Please select the product.")
 	}
@@ -145,35 +141,33 @@ func (orderItem *OrderItem) AfterCreate(tx *gorm.DB) (err error) {
 		err = errors.New(fmt.Sprintf("ProductVariation[%d]'s AvailableQuantity < OrderItem's Quantity[%d]", orderItem.ProductVariationID, orderItem.Quantity))
 		return
 	}
-	//orderItem.ProductVariation.AvailableQuantity -= orderItem.Quantity
-	//err = tx.Select("available_quantity").Save(&orderItem.ProductVariation).Error
 	return
 }
 
 var (
-	OrderState = transition.New(&Order{})
-	ItemState  = transition.New(&OrderItem{})
+	AgencyOrderState = transition.New(&AgencyOrder{})
+	AgencyItemState  = transition.New(&AgencyOrderItem{})
 )
 
 func init() {
 	// Define Order's States
-	OrderState.Initial("draft")
-	OrderState.State("paid").Enter(func(value interface{}, tx *gorm.DB) (err error) {
-		o := value.(*Order)
-		for i := 0; i < len(o.OrderItems); i++ {
-			if err = ItemState.Trigger("pay", &o.OrderItems[i], tx); err != nil {
+	AgencyOrderState.Initial("draft")
+	AgencyOrderState.State("paid").Enter(func(value interface{}, tx *gorm.DB) (err error) {
+		o := value.(*AgencyOrder)
+		for i := 0; i < len(o.AgencyOrderItems); i++ {
+			if err = AgencyItemState.Trigger("pay", &o.AgencyOrderItems[i], tx); err != nil {
 				return err
 			}
 		}
 		return nil
 	})
-	OrderState.State("shipped").Enter(func(value interface{}, tx *gorm.DB) (err error) {
+	AgencyOrderState.State("shipped").Enter(func(value interface{}, tx *gorm.DB) (err error) {
 		tx.Model(value).UpdateColumn("shipped_at", time.Now())
-
-		var orderItems []OrderItem
-		tx.Model(value).Association("OrderItems").Find(&orderItems)
+		
+		var orderItems []AgencyOrderItem
+		tx.Model(value).Association("AgencyOrderItems").Find(&orderItems)
 		for _, item := range orderItems {
-			if err = ItemState.Trigger("ship", &item, tx); err == nil {
+			if err = AgencyItemState.Trigger("ship", &item, tx); err == nil {
 				if err = tx.Select("state").Save(&item).Error; err != nil {
 					return err
 				}
@@ -181,13 +175,13 @@ func init() {
 		}
 		return nil
 	})
-	OrderState.State("completed").Enter(func(value interface{}, tx *gorm.DB) error {
+	AgencyOrderState.State("completed").Enter(func(value interface{}, tx *gorm.DB) error {
 		tx.Model(value).UpdateColumn("completed_at", time.Now())
-
-		var orderItems []OrderItem
-		tx.Model(value).Association("OrderItems").Find(&orderItems)
+		
+		var orderItems []AgencyOrderItem
+		tx.Model(value).Association("AgencyOrderItems").Find(&orderItems)
 		for _, item := range orderItems {
-			if err := ItemState.Trigger("complete", &item, tx); err == nil {
+			if err := AgencyItemState.Trigger("complete", &item, tx); err == nil {
 				if err = tx.Select("state").Save(&item).Error; err != nil {
 					return err
 				}
@@ -195,17 +189,17 @@ func init() {
 		}
 		return nil
 	})
-	OrderState.State("returned").Enter(func(value interface{}, tx *gorm.DB) error {
+	AgencyOrderState.State("returned").Enter(func(value interface{}, tx *gorm.DB) error {
 		tx.Model(value).UpdateColumn("returned_at", time.Now())
-
-		var orderItems []OrderItem
-		tx.Model(value).Association("OrderItems").Find(&orderItems)
+		
+		var orderItems []AgencyOrderItem
+		tx.Model(value).Association("AgencyOrderItems").Find(&orderItems)
 		for _, item := range orderItems {
-			if err := ItemState.Trigger("return", &item, tx); err == nil {
+			if err := AgencyItemState.Trigger("return", &item, tx); err == nil {
 				if err = tx.Select("state").Save(&item).Error; err != nil {
 					return err
 				}
-				// 返还库存
+				// 退货返还库存
 				if err = tx.Table("product_variations").
 					Where("id = ?", item.ProductVariationID).
 					UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", item.Quantity)).Error; err != nil {
@@ -215,21 +209,21 @@ func init() {
 		}
 		return nil
 	})
-
-	OrderState.Event("pay").To("paid").From("draft")
-	OrderState.Event("ship").To("shipped").From("paid")
-	OrderState.Event("complete").To("completed").From("shipped")
-	OrderState.Event("return").To("returned").From("shipped", "completed")
-
+	
+	AgencyOrderState.Event("pay").To("paid").From("draft")
+	AgencyOrderState.Event("ship").To("shipped").From("paid")
+	AgencyOrderState.Event("complete").To("completed").From("shipped")
+	AgencyOrderState.Event("return").To("returned").From("shipped", "completed")
+	
 	// Define ItemItem's States
-	ItemState.Initial("draft")
-	ItemState.State("paid")
-	ItemState.State("shipped")
-	ItemState.State("completed")
-	ItemState.State("returned")
-
-	ItemState.Event("pay").To("paid").From("draft")
-	ItemState.Event("ship").To("shipped").From("paid")
-	ItemState.Event("complete").To("completed").From("shipped")
-	ItemState.Event("return").To("returned").From("shipped", "completed")
+	AgencyItemState.Initial("draft")
+	AgencyItemState.State("paid")
+	AgencyItemState.State("shipped")
+	AgencyItemState.State("completed")
+	AgencyItemState.State("returned")
+	
+	AgencyItemState.Event("pay").To("paid").From("draft")
+	AgencyItemState.Event("ship").To("shipped").From("paid")
+	AgencyItemState.Event("complete").To("completed").From("shipped")
+	AgencyItemState.Event("return").To("returned").From("shipped", "completed")
 }

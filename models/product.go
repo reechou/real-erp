@@ -109,7 +109,7 @@ type ProductVariation struct {
 
 func ProductVariations() []ProductVariation {
 	variations := []ProductVariation{}
-	if err := DB.Preload("Product").Find(&variations).Error; err != nil {
+	if err := DB.Preload("Product.Category").Preload("Product").Find(&variations).Error; err != nil {
 		holmes.Fatal("query productVariations (%v) failure, got err %v", variations, err)
 		return variations
 	}
@@ -121,8 +121,9 @@ func (productVariation ProductVariation) ProductVariationInfo() string {
 }
 
 func (productVariation ProductVariation) Stringify() string {
+	//holmes.Debug("Product variation Stringify: %v", productVariation)
 	if product := productVariation.Product; product.ID != 0 {
-		return fmt.Sprintf("%s (%s-%s)", product.Name, product.Code, productVariation.SKU)
+		return fmt.Sprintf("【%s】%s (%s-%s)", product.Category.Name, product.Name, product.Code, productVariation.SKU)
 	}
 	return fmt.Sprint(productVariation.ID)
 }

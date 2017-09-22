@@ -274,15 +274,15 @@ func InitAdmin() {
 		Name:   "ProductVariation",
 		Config: &admin.SelectOneConfig{Collection: productVariationCollection},
 		Label:  "商品",
-		Valuer: func(record interface{}, ctx *qor.Context) interface{} {
-			orderItem := record.(*models.OrderItem)
-			if orderItem.ProductVariationID != 0 {
-				db := ctx.GetDB()
-				db.First(&orderItem.ProductVariation, orderItem.ProductVariationID)
-				return orderItem.ProductVariation.SKU
-			}
-			return ""
-		},
+		//Valuer: func(record interface{}, ctx *qor.Context) interface{} {
+		//	orderItem := record.(*models.OrderItem)
+		//	if orderItem.ProductVariationID != 0 {
+		//		db := ctx.GetDB()
+		//		db.First(&orderItem.ProductVariation, orderItem.ProductVariationID)
+		//		return orderItem.ProductVariation.SKU
+		//	}
+		//	return ""
+		//},
 	})
 	orderItemMetaResource.Meta(&admin.Meta{Name: "Quantity", Label: "数量"})
 	orderItemMetaResource.Meta(&admin.Meta{Name: "Price", Label: "总价"})
@@ -440,13 +440,15 @@ func InitAdmin() {
 	activity.Register(order)
 
 	Admin.AddSearchResource(product, user, order)
+	
+	//initAgencyAdmin()
 
 	Admin.AddResource(i18n.I18n, &admin.Config{Menu: []string{"附加工具"}, Priority: 1, Invisible: true})
 
 	Worker := getWorker()
 	//exchange_actions.RegisterExchangeJobs(i18n.I18n, Worker)
 	Admin.AddResource(Worker, &admin.Config{Menu: []string{"附加工具"}, Name: "任务"})
-
+	
 	initFuncMap()
 	initReport()
 }

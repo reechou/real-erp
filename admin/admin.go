@@ -26,6 +26,7 @@ var Admin *admin.Admin
 var Genders = []string{"男", "女", "不知"}
 var Expresses = []string{"顺丰", "中通", "圆通", "EMS"}
 var OrderState = []string{"paid", "shipped", "completed", "returned"}
+var OrderStateMap = map[string]string{"paid": "待发货", "shipped": "已发货", "completed": "已完成", "returned": "已退货"}
 var OrderStateLabel = []string{"待发货", "已发货", "已完成", "已退货"}
 var UserRoles = []string{"Admin", "Maintainer", "Member"}
 var UserPermissions = []string{"admin", "maintainer", "member"}
@@ -264,7 +265,17 @@ func InitAdmin() {
 	order.Meta(&admin.Meta{Name: "Express", Label: "快递公司", Permission: roles.Allow(roles.Read, roles.Anyone)})
 	order.Meta(&admin.Meta{Name: "TrackingNumber", Label: "快递单号", Permission: roles.Allow(roles.Read, roles.Anyone)})
 	order.Meta(&admin.Meta{Name: "User", Label: "用户"})
-	order.Meta(&admin.Meta{Name: "State", Label: "订单状态"})
+	order.Meta(&admin.Meta{
+		Name:  "State",
+		Label: "订单状态",
+		Valuer: func(record interface{}, ctx *qor.Context) interface{} {
+			order := record.(*models.Order)
+			if state, ok := OrderStateMap[order.State]; ok {
+				return state
+			}
+			return ""
+		},
+	})
 	order.Meta(&admin.Meta{Name: "CreatedAt", Label: "创建时间"})
 	order.Meta(&admin.Meta{Name: "Seller", Label: "销售员", Permission: roles.Allow(roles.Read, UserPermissions[USER_PERMISSION_ADMIN])})
 
@@ -441,7 +452,7 @@ func InitAdmin() {
 
 	Admin.AddSearchResource(product, user, order)
 	
-	//initAgencyAdmin()
+	initAgencyAdmin()
 
 	Admin.AddResource(i18n.I18n, &admin.Config{Menu: []string{"附加工具"}, Priority: 1, Invisible: true})
 

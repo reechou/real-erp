@@ -17,21 +17,38 @@ type Agency struct {
 	Superior         *Agency
 	PurchaseTimes    uint
 	LastPurchaseTime *time.Time
+	Seller           string
 
 	AgencyLevels []AgencyLevel
+	SubordinateAgency []Agency
+}
+
+type AgencyProductQuantity struct {
+	gorm.Model
+	AgencyLevelID uint `gorm:"unique_index:uni_agency_product_quantity"`
+	
+	ProductVariationID uint `gorm:"unique_index:uni_agency_product_quantity"`
+	ProductVariation   ProductVariation
+	Quantity           uint
 }
 
 type AgencyLevel struct {
 	gorm.Model
-	AgencyID uint
+	AgencyID uint `gorm:"unique_index:uni_agency_level"`
 
-	CategoryID          uint
+	CategoryID          uint `gorm:"unique_index:uni_agency_level"`
 	Category            Category
 	AgencyLevelConfigID uint
 	AgencyLevelConfig   AgencyLevelConfig
 
-	PurchaseCumulativeAmount float32
-	Quantity                 uint
+	PurchaseCumulativeAmount float32                 // 该分类总进货金额
+	AgencyProductQuantities  []AgencyProductQuantity // 剩余量
+}
+
+func (agencyLevel AgencyLevel) AgencyLevelInfo() string {
+	DB.First(&agencyLevel.Category, agencyLevel.CategoryID)
+	DB.First(&agencyLevel.AgencyLevelConfig, agencyLevel.AgencyLevelConfigID)
+	return fmt.Sprintf("%s (等级: %d)", agencyLevel.Category.Name, agencyLevel.AgencyLevelConfig.Level)
 }
 
 type AgencyPurchasePrice struct {
@@ -51,11 +68,15 @@ func (agencyPurchasePrice AgencyPurchasePrice) AgencyPurchasePriceInfo() string 
 type AgencyLevelConfig struct {
 	gorm.Model
 
-	CategoryID uint
+	CategoryID uint `gorm:"unique_index:uni_agency_level_config"`
 	Category   Category
 
-	Level uint
+	Level uint `gorm:"unique_index:uni_agency_level_config"`
+	
+	CumulativeAmount float32
+	PurchasePrices   []AgencyPurchasePrice
+}
 
-	PurchaseCumulativeAmount float32
-	PurchasePrices           []AgencyPurchasePrice
+func (agencyLevelConfig AgencyLevelConfig) AgencyLevelConfigInfo() string {
+	return fmt.Sprintf("等级: %d", agencyLevelConfig.Level)
 }

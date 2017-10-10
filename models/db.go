@@ -58,7 +58,7 @@ func InitDB(cfg *config.Config) {
 	AutoMigrate(&Order{}, &OrderItem{})
 	AutoMigrate(&transition.StateChangeLog{})
 	
-	AutoMigrate(&Agency{}, &AgencyLevel{}, &AgencyLevelConfig{}, &AgencyPurchasePrice{})
+	AutoMigrate(&Agency{}, &AgencyProductQuantity{}, &AgencyLevel{}, &AgencyLevelConfig{}, &AgencyPurchasePrice{})
 	AutoMigrate(&AgencyOrder{}, &AgencyOrderItem{})
 
 	AutoMigrate(&activity.QorActivity{})

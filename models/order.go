@@ -46,23 +46,30 @@ func (order *Order) Amount() (amount float32) {
 	return
 }
 
+// 更新订单总金额
 func (order *Order) BeforeCreate(tx *gorm.DB) (err error) {
 	order.PaymentAmount = order.Amount()
 	return
 }
 
 func (order *Order) BeforeUpdate(tx *gorm.DB) (err error) {
+	oldOrder := new(Order)
+	tx.First(oldOrder, order.ID)
+	if oldOrder.TrackingNumber != "" {
+		if oldOrder.State != order.State {
+			// 更新状态
+			return
+		}
+		return errors.New("订单状态不是未发货状态, 不能更新.")
+	}
 	if len(order.OrderItems) != 0 {
 		order.PaymentAmount = order.Amount()
 	}
-	
-	//holmes.Debug("order BeforeUpdate: %+v", order)
-	
 	return
 }
 
+// 更新用户购买记录
 func (order *Order) AfterCreate(tx *gorm.DB) (err error) {
-	// 更新用户购买记录
 	order.User.BuyTimes++
 	err = tx.Model(&order.User).
 		Select("buy_times", "last_buy_time").
@@ -75,80 +82,84 @@ func (order *Order) AfterCreate(tx *gorm.DB) (err error) {
 }
 
 func (order *Order) BeforeDelete(tx *gorm.DB) (err error) {
-	err = tx.Model(order).Related(&order.OrderItems).Error
-	if err != nil {
-		holmes.Error("before delete get order items error: %v", err)
-		return
-	}
-	for _, v := range order.OrderItems {
-		if v.ID == 0 {
-			continue
-		}
-		tx.Delete(&v)
-		// 返还库存
-		err = tx.Table("product_variations").
-			Where("id = ?", v.ProductVariationID).
-			UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", v.Quantity)).Error
+	if order.TrackingNumber != "" {
+		return errors.New("订单状态不是未发货状态, 不能删除.")
 	}
 	return
 }
 
-func (orderItem *OrderItem) BeforeUpdate(tx *gorm.DB) (err error) {
-	oldOrderItem := new(OrderItem)
-	tx.First(oldOrderItem, orderItem.ID)
-	//holmes.Debug("OrderItem BeforeUpdate old: %+v new: %+v", oldOrderItem, orderItem)
-	if orderItem.ProductVariation.ID != 0 {
-		rowsAffected := tx.Table("product_variations").
-			Where("id = ? AND available_quantity >= ?", orderItem.ProductVariation.ID, orderItem.Quantity).
-			UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", orderItem.Quantity)).RowsAffected
-		if rowsAffected == 0 {
-			err = errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
-			return
-		}
-		orderItem.ProductVariation.AvailableQuantity -= orderItem.Quantity
+//func (order *Order) BeforeDelete(tx *gorm.DB) (err error) {
+//	err = tx.Model(order).Related(&order.OrderItems).Error
+//	if err != nil {
+//		holmes.Error("before delete get order items error: %v", err)
+//		return
+//	}
+//	for _, v := range order.OrderItems {
+//		if v.ID == 0 {
+//			continue
+//		}
+//		tx.Delete(&v)
+//		// 返还库存
+//		err = tx.Table("product_variations").
+//			Where("id = ?", v.ProductVariationID).
+//			UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", v.Quantity)).Error
+//	}
+//	return
+//}
 
-		tx.Table("product_variations").
-			Where("id = ?", oldOrderItem.ProductVariationID).
-			UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", oldOrderItem.Quantity))
-	} else {
-		if orderItem.Quantity > oldOrderItem.Quantity {
-			addQuantity := orderItem.Quantity - oldOrderItem.Quantity
-			rowsAffected := tx.Table("product_variations").
-				Where("id = ? AND available_quantity >= ?", orderItem.ProductVariationID, addQuantity).
-				UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", addQuantity)).RowsAffected
-			if rowsAffected == 0 {
-				err = errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
-				return
-			}
-		} else if orderItem.Quantity < oldOrderItem.Quantity {
-			tx.Table("product_variations").
-				Where("id = ?", orderItem.ProductVariationID).
-				UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", oldOrderItem.Quantity-orderItem.Quantity))
-		}
-	}
-	return
-}
+//func (orderItem *OrderItem) BeforeUpdate(tx *gorm.DB) (err error) {
+//	oldOrderItem := new(OrderItem)
+//	tx.First(oldOrderItem, orderItem.ID)
+//	if orderItem.ProductVariation.ID != 0 {
+//		rowsAffected := tx.Table("product_variations").
+//			Where("id = ? AND available_quantity >= ?", orderItem.ProductVariation.ID, orderItem.Quantity).
+//			UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", orderItem.Quantity)).RowsAffected
+//		if rowsAffected == 0 {
+//			err = errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
+//			return
+//		}
+//		orderItem.ProductVariation.AvailableQuantity -= orderItem.Quantity
+//
+//		tx.Table("product_variations").
+//			Where("id = ?", oldOrderItem.ProductVariationID).
+//			UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", oldOrderItem.Quantity))
+//	} else {
+//		if orderItem.Quantity > oldOrderItem.Quantity {
+//			addQuantity := orderItem.Quantity - oldOrderItem.Quantity
+//			rowsAffected := tx.Table("product_variations").
+//				Where("id = ? AND available_quantity >= ?", orderItem.ProductVariationID, addQuantity).
+//				UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", addQuantity)).RowsAffected
+//			if rowsAffected == 0 {
+//				err = errors.New("ProductVariation's AvailableQuantity < OrderItem's Quantity")
+//				return
+//			}
+//		} else if orderItem.Quantity < oldOrderItem.Quantity {
+//			tx.Table("product_variations").
+//				Where("id = ?", orderItem.ProductVariationID).
+//				UpdateColumn("available_quantity", gorm.Expr("available_quantity + ?", oldOrderItem.Quantity-orderItem.Quantity))
+//		}
+//	}
+//	return
+//}
 
-func (orderItem *OrderItem) AfterCreate(tx *gorm.DB) (err error) {
-	holmes.Debug("order item: %+v", orderItem)
-	if orderItem.ProductVariationID == 0 {
-		return errors.New("Please select the product.")
-	}
-	if orderItem.Quantity == 0 {
-		return
-	}
-	// 减库存
-	rowsAffected := tx.Table("product_variations").
-		Where("id = ? AND available_quantity >= ?", orderItem.ProductVariationID, orderItem.Quantity).
-		UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", orderItem.Quantity)).RowsAffected
-	if rowsAffected == 0 {
-		err = errors.New(fmt.Sprintf("ProductVariation[%d]'s AvailableQuantity < OrderItem's Quantity[%d]", orderItem.ProductVariationID, orderItem.Quantity))
-		return
-	}
-	//orderItem.ProductVariation.AvailableQuantity -= orderItem.Quantity
-	//err = tx.Select("available_quantity").Save(&orderItem.ProductVariation).Error
-	return
-}
+//func (orderItem *OrderItem) AfterCreate(tx *gorm.DB) (err error) {
+//	holmes.Debug("order item: %+v", orderItem)
+//	if orderItem.ProductVariationID == 0 {
+//		return errors.New("Please select the product.")
+//	}
+//	if orderItem.Quantity == 0 {
+//		return
+//	}
+//	// 减库存
+//	rowsAffected := tx.Table("product_variations").
+//		Where("id = ? AND available_quantity >= ?", orderItem.ProductVariationID, orderItem.Quantity).
+//		UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", orderItem.Quantity)).RowsAffected
+//	if rowsAffected == 0 {
+//		err = errors.New(fmt.Sprintf("ProductVariation[%d]'s AvailableQuantity < OrderItem's Quantity[%d]", orderItem.ProductVariationID, orderItem.Quantity))
+//		return
+//	}
+//	return
+//}
 
 var (
 	OrderState = transition.New(&Order{})
@@ -177,6 +188,14 @@ func init() {
 				if err = tx.Select("state").Save(&item).Error; err != nil {
 					return err
 				}
+			}
+			// 减库存
+			rowsAffected := tx.Table("product_variations").
+				Where("id = ? AND available_quantity >= ?", item.ProductVariationID, item.Quantity).
+				UpdateColumn("available_quantity", gorm.Expr("available_quantity - ?", item.Quantity)).RowsAffected
+			if rowsAffected == 0 {
+				err = errors.New(fmt.Sprintf("ProductVariation[%d]'s AvailableQuantity < OrderItem's Quantity[%d]", item.ProductVariationID, item.Quantity))
+				return
 			}
 		}
 		return nil

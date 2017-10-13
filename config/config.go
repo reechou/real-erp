@@ -30,6 +30,16 @@ type DBInfo struct {
 	DBName  string
 }
 
+type WxOauth struct {
+	WxAppId         []string
+	WxAppSecret     []string
+	MchId           []string
+	MchApiKey       []string
+	Oauth2ScopeBase string
+	Oauth2ScopeUser string
+	MpVerifyDir     string
+}
+
 type Config struct {
 	Debug     bool
 	Path      string
@@ -38,6 +48,7 @@ type Config struct {
 	IfShowSql bool
 
 	DBInfo
+	WxOauth
 }
 
 func NewConfig() *Config {

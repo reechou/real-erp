@@ -2,9 +2,9 @@ package main
 
 import (
 	"github.com/reechou/real-erp/config"
-	"github.com/reechou/real-erp/controllers"
+	"github.com/reechou/real-erp/main_init"
 )
 
 func main() {
-	controllers.NewLogic(config.NewConfig()).Run()
+	main_init.NewLogic(config.NewConfig()).Run()
 }

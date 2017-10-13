@@ -16,6 +16,7 @@ import (
 	"github.com/reechou/real-erp/auth"
 	"github.com/reechou/real-erp/config"
 	"github.com/reechou/real-erp/models"
+	"github.com/reechou/real-erp/controllers"
 )
 
 var rootMux *http.ServeMux
@@ -42,13 +43,15 @@ func Router() *http.ServeMux {
 		})
 
 		router.Get("/", HomeIndex)
+		
+		router.Get("/agency/index", controller.AgencyIndex)
 
 		rootMux = http.NewServeMux()
 
 		rootMux.Handle("/auth/", auth.Auth.NewServeMux())
 		rootMux.Handle("/system/", utils.FileServer(http.Dir(filepath.Join(config.Root, "public"))))
-		assetFS := bindatafs.AssetFS.FileServer(http.Dir("public"), "javascripts", "stylesheets", "images", "dist", "fonts", "vendors")
-		for _, path := range []string{"javascripts", "stylesheets", "images", "dist", "fonts", "vendors"} {
+		assetFS := bindatafs.AssetFS.FileServer(http.Dir("public"), "javascripts", "stylesheets", "images", "dist", "fonts", "vendors", "agency")
+		for _, path := range []string{"javascripts", "stylesheets", "images", "dist", "fonts", "vendors", "agency"} {
 			rootMux.Handle(fmt.Sprintf("/%s/", path), assetFS)
 		}
 

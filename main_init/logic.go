@@ -1,4 +1,4 @@
-package controllers
+package main_init
 
 import (
 	"html/template"
@@ -15,6 +15,7 @@ import (
 	"github.com/reechou/real-erp/models"
 	"github.com/reechou/real-erp/routes"
 	"github.com/reechou/real-erp/utils"
+	"github.com/reechou/real-erp/controllers"
 )
 
 type Logic struct {
@@ -29,12 +30,14 @@ func NewLogic(cfg *config.Config) *Logic {
 	models.InitDB(cfg)
 
 	i18n.InitI18n()
-
+	
 	auth.InitAuth()
 	auth.InitAdminAuth()
 
 	admin.InitFilebox()
 	admin.InitExchange()
+	
+	controller.InitWxOAuth(cfg)
 
 	admin.InitAdmin()
 

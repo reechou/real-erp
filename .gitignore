@@ -1,6 +1,7 @@
 vendor/*
 log/*
 public/downloads/*
+public/mp/*
 public/system/product_images/*
 public/system/qor_jobs/*
 real-erp.ini

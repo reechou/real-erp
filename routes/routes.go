@@ -44,6 +44,7 @@ func Router() *http.ServeMux {
 
 		router.Get("/", HomeIndex)
 		
+		router.Get("/agency/{}")
 		router.Get("/agency/index", controller.AgencyIndex)
 
 		rootMux = http.NewServeMux()

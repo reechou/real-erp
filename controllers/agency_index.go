@@ -4,9 +4,11 @@ import (
 	"net/http"
 	"io"
 	"encoding/json"
+	"path/filepath"
 	
 	"github.com/reechou/real-erp/models"
 	"github.com/reechou/real-erp/utils"
+	"github.com/reechou/real-erp/config"
 	"github.com/reechou/holmes"
 	"github.com/jinzhu/gorm"
 )
@@ -15,8 +17,8 @@ func AgencyMp(w http.ResponseWriter, req *http.Request) {
 	var (
 		MP = utils.URLParam("mp", req)
 	)
-	//http.ServeFile(w, req, )
-	http.Redirect(w, req, "/mp/"+MP, http.StatusFound)
+	http.ServeFile(w, req, filepath.Join(config.Root, "public", "mp", MP))
+	//http.Redirect(w, req, "/mp/"+MP, http.StatusFound)
 	return
 }
 

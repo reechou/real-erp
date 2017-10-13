@@ -11,6 +11,15 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
+func AgencyMp(w http.ResponseWriter, req *http.Request) {
+	var (
+		MP = utils.URLParam("mp", req)
+	)
+	//http.ServeFile(w, req, )
+	http.Redirect(w, req, "/mp/"+MP, http.StatusFound)
+	return
+}
+
 func AgencyIndex(w http.ResponseWriter, req *http.Request) {
 	userinfo, ifRedirect, ifCheckOK := WeixinOAuth.checkUser(w, req)
 	if !ifCheckOK {
@@ -33,12 +42,20 @@ func AgencyIndex(w http.ResponseWriter, req *http.Request) {
 		io.WriteString(w, "system error.")
 		return
 	}
-	if account.AgencyId == 0 {
-		// redirect to agency sign
-		return
-	}
+	//if account.AgencyId == 0 {
+	//	// redirect to agency sign
+	//	return
+	//}
+	account.AgencyId = 5
 	
-	tx.Joins("JOIN categories ON categories.id = agency_levels.category_id").Where("agency_id = ?", account.AgencyId).Preload("AgencyProductQuantities").Find(&agencyLevels)
+	tx.Where("agency_id = ?", account.AgencyId).Preload("AgencyProductQuantities").Find(&agencyLevels)
+	for i := 0; i < len(agencyLevels); i++ {
+		tx.First(&agencyLevels[i].Category, agencyLevels[i].CategoryID)
+		tx.First(&agencyLevels[i].AgencyLevelConfig, agencyLevels[i].AgencyLevelConfigID)
+		for j := 0; j < len(agencyLevels[i].AgencyProductQuantities); j++ {
+			tx.First(&agencyLevels[i].AgencyProductQuantities[j].ProductVariation, agencyLevels[i].AgencyProductQuantities[j].ProductVariationID)
+		}
+	}
 	
 	b, _ := json.Marshal(agencyLevels)
 	w.Write(b)
@@ -47,11 +64,8 @@ func AgencyIndex(w http.ResponseWriter, req *http.Request) {
 func checkAccount(userinfo *UserInfo, tx *gorm.DB) (*models.AgencyAccount, error) {
 	account := new(models.AgencyAccount)
 	var err error
-	if err = tx.Where("app_id = ? AND open_id = ?", userinfo.AppId, userinfo.OpenId).First(account).Error; err != nil {
-		holmes.Error("check account get error: %v", err)
-		return nil, err
-	}
-	if account.ID == 0 {
+	rowsAffected := tx.Where("app_id = ? AND open_id = ?", userinfo.AppId, userinfo.OpenId).First(account).RowsAffected
+	if rowsAffected == 0 {
 		account.AppId = userinfo.AppId
 		account.OpenId = userinfo.OpenId
 		account.Name = userinfo.Name

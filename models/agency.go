@@ -13,6 +13,7 @@ type Agency struct {
 	Name             string `form:"name"`
 	Phone            string
 	IDCardNumber     string
+	Wechat           string
 	SuperiorID       uint
 	Superior         *Agency
 	PurchaseTimes    uint

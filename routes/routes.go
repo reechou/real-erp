@@ -44,15 +44,15 @@ func Router() *http.ServeMux {
 
 		router.Get("/", HomeIndex)
 		
-		router.Get("/agency/{}")
-		router.Get("/agency/index", controller.AgencyIndex)
+		router.Get("/agency/{mp}", controller.AgencyMp)
+		router.Get("/agency/l/index", controller.AgencyIndex)
 
 		rootMux = http.NewServeMux()
 
 		rootMux.Handle("/auth/", auth.Auth.NewServeMux())
 		rootMux.Handle("/system/", utils.FileServer(http.Dir(filepath.Join(config.Root, "public"))))
-		assetFS := bindatafs.AssetFS.FileServer(http.Dir("public"), "javascripts", "stylesheets", "images", "dist", "fonts", "vendors", "agency")
-		for _, path := range []string{"javascripts", "stylesheets", "images", "dist", "fonts", "vendors", "agency"} {
+		assetFS := bindatafs.AssetFS.FileServer(http.Dir("public"), "javascripts", "stylesheets", "images", "dist", "fonts", "vendors", "mp")
+		for _, path := range []string{"javascripts", "stylesheets", "images", "dist", "fonts", "vendors", "mp"} {
 			rootMux.Handle(fmt.Sprintf("/%s/", path), assetFS)
 		}
 

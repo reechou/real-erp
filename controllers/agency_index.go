@@ -18,8 +18,11 @@ func AgencyMp(w http.ResponseWriter, req *http.Request) {
 		MP = utils.URLParam("mp", req)
 	)
 	http.ServeFile(w, req, filepath.Join(config.Root, "public", "mp", MP))
-	//http.Redirect(w, req, "/mp/"+MP, http.StatusFound)
 	return
+}
+
+func AgencySign(w http.ResponseWriter, req *http.Request) {
+	
 }
 
 func AgencyIndex(w http.ResponseWriter, req *http.Request) {

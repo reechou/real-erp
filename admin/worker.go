@@ -153,6 +153,7 @@ func getWorker() *worker.Worker {
 					o := progress.Value.(*models.Order)
 					
 					qorJob.SetProgress(uint(float32(progress.Current) / float32(progress.Total) * 100))
+					qorJob.AddLog(fmt.Sprintf("\t -- %v", o))
 					qorJob.AddLog(fmt.Sprintf("%d/%d 导入订单: %v %v %v", progress.Current, progress.Total, o.ID, o.Express, o.TrackingNumber))
 					if progress.Current == progress.Total {
 						qorJob.AddLog("导入订单已完成")

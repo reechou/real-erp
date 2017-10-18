@@ -59,7 +59,6 @@ func InitExchange() {
 				}
 			}
 		}
-		holmes.Debug("order exchange shipping value: %+v", value)
 		return nil
 	})
 }

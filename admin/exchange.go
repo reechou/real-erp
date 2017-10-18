@@ -9,7 +9,6 @@ import (
 	"github.com/qor/validations"
 
 	"github.com/reechou/real-erp/models"
-	"github.com/reechou/holmes"
 )
 
 var OrderExchange *exchange.Resource

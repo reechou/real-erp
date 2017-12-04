@@ -14,7 +14,7 @@ type AgencyOrder struct {
 	gorm.Model
 	AgencyID          uint
 	Agency            Agency
-	PaymentAmount     float32
+	PaymentAmount     float32 // 总价
 	AbandonedReason   string
 	Express           string
 	TrackingNumber    string
@@ -25,6 +25,8 @@ type AgencyOrder struct {
 	ShippingAddress   Address
 	AgencyOrderItems  []AgencyOrderItem
 	Seller            string `gorm:"index"`
+	OrderStatus       uint   `gorm:"default:0;index"`
+	AgencySrc         uint   `gorm:"default:0;index"`
 	transition.Transition
 }
 
@@ -34,8 +36,9 @@ type AgencyOrderItem struct {
 	ProductVariationID uint `cartitem:"ProductVariationID"`
 	ProductVariation   ProductVariation
 	Quantity           uint    `cartitem:"Quantity"`
-	Price              float32 // 总价
+	Price              float32 // 订单单项价格
 	Seller             string  `gorm:"index"`
+	OrderStatus        uint    `gorm:"default:0;index"`
 	transition.Transition
 }
 
@@ -70,6 +73,10 @@ func (order *AgencyOrder) BeforeUpdate(tx *gorm.DB) (err error) {
 
 // 更新代理进货记录
 func (order *AgencyOrder) AfterCreate(tx *gorm.DB) (err error) {
+	if order.OrderStatus != 0 {
+		return
+	}
+	
 	order.Agency.PurchaseTimes++
 	err = tx.Model(&order.Agency).
 		Select("purchase_times", "last_purchase_time").

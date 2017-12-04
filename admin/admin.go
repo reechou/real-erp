@@ -49,6 +49,7 @@ func InitAdmin() {
 	category := Admin.AddResource(&models.Category{}, &admin.Config{Menu: []string{"产品管理"}, Name: "分类", Priority: -3})
 	category.Meta(&admin.Meta{Name: "Name", Label: "分类名"})
 	category.Meta(&admin.Meta{Name: "Code", Label: "代码"})
+	category.IndexAttrs("Name", "Code")
 
 	// Add ProductImage as Media Library
 	productImagesResource := Admin.AddResource(&models.ProductImage{}, &admin.Config{
@@ -71,6 +72,14 @@ func InitAdmin() {
 		Label:  "分类",
 	})
 	productImagesResource.IndexAttrs("File", "Title")
+	
+	category.Meta(&admin.Meta{Name: "MainImage", Config: &media_library.MediaBoxConfig{
+		RemoteDataResource: productImagesResource,
+		Max:                1,
+		Sizes: map[string]*media.Size{
+			"main": {Width: 560, Height: 700},
+		},
+	}, Label: "主图"})
 
 	productPurchaseResource := Admin.AddResource(&models.ProductPurchase{}, &admin.Config{
 		Menu:       []string{"产品管理"},

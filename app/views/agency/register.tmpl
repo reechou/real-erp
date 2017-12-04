@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" type="text/css" href="/dist/agency.css" />
+    <title>注册代理</title>
+</head>
+
+<body bgcolor="#efefef">
+    <div class="container">
+        <div class="image">
+            {{ if .Account.AvatarUrl }}
+            <img src="{{.Account.AvatarUrl}}" />
+            {{ else }}
+            <img src="/images/person.png" />
+            {{ end }}
+        </div>
+        <div class="register_form">
+            <div class="R_name">
+                <input type="text" id="user" placeholder="姓名" />
+            </div>
+            <div class="phone">
+                <input type="text" id="phone" placeholder="手机号" />
+            </div>
+            <div class="ID_card">
+                <input type="number" id="card" placeholder="身份证" />
+            </div>
+            <div class="wxnumber">
+                <input type="text" id="wx" placeholder="微信号" />
+            </div>
+            <div class="R_errormsg">
+            </div>
+            <div class="submit_btn" onclick="submit()">
+                 提交
+            </div>
+        </div>
+
+    </div>
+
+    <script type="text/javascript" src="/vendors/zeptojs.min.js"></script>
+    <script type="text/javascript">
+        function submit() {
+            var errmsg = '';
+            var user = document.getElementById('user').value;
+            var phone = document.getElementById('phone').value;
+            var card = document.getElementById('card').value;
+            var wx = document.getElementById('wx').value;
+            if(user == '' || phone == '' || card == '' || wx == ''){    //信息校验
+                errmsg="请填写完整信息";
+            } else if (!/^(0|86|17951)?(13[0-9]|15[012356789]|18[0-9]|14[57]|17[0-9])[0-9]{8}$/.test(phone)) {
+                errmsg="请输入正确手机号";
+            } else if (!/^[1-9]\d{5}[1-9]\d{3}((0\d)|(1[0-2]))(([0|1|2]\d)|3[0-1])\d{3}([0-9]|X)$/.test(card)){
+                errmsg="请输入正确证件号"
+            }
+
+            $('.errormsg').html('<span id="error">'+ errmsg +'<span>')
+            setTimeout(
+                function remove() {
+                    $('.errormsg').html('<span id="error"><span>')       //三秒后错误信息消失
+                } 
+            ,3000);
+
+            if(!errmsg){             // 填写信息正确后执行
+                $.ajax({
+                    type: 'POST',
+                    url: '/agency/api/order_shipping',
+                    dataType: 'json',
+                    data: JSON.stringify({
+                        appId: {{ .SignInfo.AppId }},
+                        openId: {{ .SignInfo.OpenId }},
+                        name: name,
+                        phone: phone,
+                        idcard: card,
+                        wechat: wx,
+                        superior: {{ .SignInfo.SrcId }},}),
+                    success: function(data) {
+                        if(data.code != 0) { alert("注册失败, 请稍后再试"); return; }
+                        location.assign('/agency/l/index');
+                    }
+                });
+            }
+
+        }
+    </script>
+</body>
+
+</html>

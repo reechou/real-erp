@@ -201,6 +201,7 @@ func initAgencyAdmin() {
 		if oi, ok := value.(*models.AgencyOrderItem); ok {
 			if oi.ID == 0 {
 				// create
+				oi.OrderStatus = 0
 				oi.Seller = context.CurrentUser.DisplayName()
 			}
 		}
@@ -211,6 +212,8 @@ func initAgencyAdmin() {
 		if o, ok := value.(*models.AgencyOrder); ok {
 			if o.ID == 0 {
 				// create
+				o.OrderStatus = 0
+				o.AgencySrc = 0
 				o.Seller = context.CurrentUser.DisplayName()
 				models.AgencyOrderState.Trigger("pay", o, context.DB)
 			} else {
@@ -327,9 +330,9 @@ func initAgencyAdmin() {
 		Default: true,
 		Handler: func(db *gorm.DB, context *qor.Context) *gorm.DB {
 			if IsAdmin(context) {
-				return db
+				return db.Where("order_status = 0")
 			}
-			return db.Where("seller = ?", context.CurrentUser.DisplayName())
+			return db.Where("seller = ? AND order_status = 0 AND agency_src = 0", context.CurrentUser.DisplayName())
 		},
 	})
 
@@ -433,8 +436,8 @@ func initAgencyAdmin() {
 	})
 
 	order.IndexAttrs("User", "PaymentAmount", "ShippedAt", "State", "ShippingAddress", "CreatedAt", "Seller")
-	order.NewAttrs("-AbandonedReason", "-PaymentAmount", "-CreatedAt", "-ShippedAt", "-CompletedAt", "-ReturnedAt")
-	order.EditAttrs("-AbandonedReason", "-State", "-CreatedAt", "-ShippedAt", "-CompletedAt", "-ReturnedAt")
+	order.NewAttrs("-AbandonedReason", "-PaymentAmount", "-CreatedAt", "-ShippedAt", "-CompletedAt", "-ReturnedAt", "-OrderStatus", "-AgencySrc")
+	order.EditAttrs("-AbandonedReason", "-State", "-CreatedAt", "-ShippedAt", "-CompletedAt", "-ReturnedAt", "-OrderStatus", "-AgencySrc")
 	order.SearchAttrs("User.Name", "User.Wechat", "ShippingAddress.ContactName", "ShippingAddress.AddressDetail")
 
 	activity.Register(order)

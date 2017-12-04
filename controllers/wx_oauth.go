@@ -27,6 +27,7 @@ type UserInfo struct {
 	Name      string
 	AvatarUrl string
 	App       int
+	Src       int
 }
 
 type WxOAuth struct {
@@ -92,6 +93,18 @@ func (self *WxOAuth) checkUserBase(w http.ResponseWriter, r *http.Request) (ui *
 		ifCheckOK = false
 		return
 	}
+	
+	src := 0
+	srcVal := queryValues.Get("src")
+	if srcVal != "" {
+		src, err = strconv.Atoi(srcVal)
+		if err != nil {
+			holmes.Error("strconv src[%s] error: %v", app, err)
+			ifCheckOK = false
+			return
+		}
+	}
+	ui.Src = src
 
 	ui.App = appIdx
 	ui.AppId = self.cfg.WxOauth.WxAppId[appIdx]
@@ -166,6 +179,18 @@ func (self *WxOAuth) checkUser(w http.ResponseWriter, r *http.Request) (ui *User
 		ifCheckOK = false
 		return
 	}
+	
+	src := 0
+	srcVal := queryValues.Get("src")
+	if srcVal != "" {
+		src, err = strconv.Atoi(srcVal)
+		if err != nil {
+			holmes.Error("strconv src[%s] error: %v", app, err)
+			ifCheckOK = false
+			return
+		}
+	}
+	ui.Src = src
 	
 	ui.App = appIdx
 	ui.AppId = self.cfg.WxOauth.WxAppId[appIdx]

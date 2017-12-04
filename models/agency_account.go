@@ -11,7 +11,4 @@ type AgencyAccount struct {
 	OpenId    string `gorm:"unique_index:uni_app_openid"`
 	Name      string
 	AvatarUrl string
-	
-	AgencyId uint
-	Agency   Agency
 }

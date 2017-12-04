@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+    <link rel="stylesheet" type="text/css" href="/dist/agency.css" />
+    <link rel="stylesheet" type="text/css" href="/vendors/dialog.css" />
+    <title>入单</title>
+</head>
+
+<body>
+    <div class="order_contanier">
+        <div class="product_info">
+            <div class="head_title">
+                <label >产品信息</label>
+            </div>
+            <div class="product">
+                <div class="title"><label>产品</label></div>
+                <div class="P_select">
+                    <select name="type" class="form-control">
+                        <option value="{{ .ProductVariation.ID }}">{{ .ProductVariation.SKU }}</option>
+                    </select>
+                </div>
+                <!--<div class="P_select">-->
+                    <!--<select name="type" class="form-control">-->
+                        <!--<option value="wan">祛痘膏</option>-->
+                        <!--<option value="ling">蛇油膏</option>-->
+                    <!--</select>-->
+                <!--</div>-->
+            </div>
+            <div class="type">
+                <div class="title"><label>类型</label></div>
+                <div class="P_select">
+                    <select name="type" class="form-control" id="order-type" onchange="isagent(value)">
+                        <option value="0">零售</option>
+                        <option value="1">代理</option>
+                    </select>
+                </div>
+                <div class="P_select" >
+                    <select name="type" class="form-control" id="agent">
+                        {{ range .SubAgencies }}
+                        <option value="{{ .ID }}">{{ .Name }}</option>
+                        {{ end }}
+                    </select>
+                </div>
+            </div>
+            <div class="info">
+                <div class="title"><label>数量</label></div>
+                <div class="number">
+                    <input type="number" name="number" id="number" class="form-control" />
+                </div>
+                <div class="title"><label>金额</label></div>
+                <div class="money">
+                    <input type="number" name="money" id="money" class="form-control" />
+                </div>
+            </div>
+        </div>
+        <div class="send_info">
+            <div class="head_title">
+                <label >发货信息</label>
+            </div>
+            <div class="info">
+                <div class="title"><label>姓名</label></div>
+                <div class="name">
+                    <input type="text" name="name" id="name" class="form-control" />
+                </div>
+                <div class="title"><label>电话</label></div>
+                <div class="money">
+                    <input type="number" name="phone" id="phone" class="form-control" />
+                </div>
+            </div>
+            <div class="express">
+                <div class="title"><label>快递</label></div>
+                <div class="name">
+                    <input type="text" name="express_name" id="express" class="form-control" />
+                </div>
+                <div class="title"><label>单号</label></div>
+                <div class="money">
+                    <input type="number" name="express_num" id="tracking-number" class="form-control" />
+                </div>
+            </div>
+        </div>
+        <div class="errormsg"></div>
+        <div class="submit">
+            <button class="btn btn-primary" onclick="submit()">提交</button>
+        </div>
+    </div>
+
+    <script type="text/javascript" src="https://oss.ririyuedu.com/zepto.min.js"></script>
+    <script type="text/javascript" src="/vendors/dialog.js"></script>
+    <script type="text/javascript">
+        function isagent(val) {
+            if(val == 0) {
+                document.getElementById('agent').style.display = "none";
+            } else {
+                document.getElementById('agent').style.display = "block";
+            }
+        }
+
+        function submit() {
+            var errmsg = "";
+            var number = document.getElementById('number').value;
+            var money = document.getElementById('money').value;
+            var name = document.getElementById('name').value;
+            var phone = document.getElementById('phone').value;
+            var express = document.getElementById('express').value;
+            var trackingNumber = document.getElementById('tracking-number').value;
+            if(number == '' || money == '' || name == '') {
+                errmsg = "数量或金额或姓名不能为空"
+            }
+            if(number > {{ .AgencyProductQuantity.Quantity }}) {
+                errmsg = "出单数量不能超过库存"
+            }
+            $('.errormsg').html('<span id="error">'+ errmsg +'<span>')
+            setTimeout(
+                function remove(){
+                    $('.errormsg').html('<span id="error"><span>')
+                } 
+            , 3000);
+
+            var agent = 0;
+            if($("#order-type").val() == 1) {
+                agent = parseInt($("#agent").val());
+            }
+
+            if(!errmsg) { // 填写信息正确后执行
+                $.ajax({
+                    type: 'POST',
+                    url: '/agency/api/sign',
+                    dataType: 'json',
+                    data: JSON.stringify({
+                        ownAgencyID: parseInt({{ .OwnInfo.AgencyId }}),
+                        productVariationID: {{ .ProductVariation.ID }},
+                        agencyProductQuantityId: {{ .AgencyProductQuantity.ID }},
+                        agencyId: agent,
+                        quantity: parseInt(number),
+                        price: parseFloat(money),
+                        name: name,
+                        phone: phone,
+                        express: express,
+                        trackingNumber: trackingNumber}),
+                    success: function(data) {
+                        if(data.code != 0) { alert("入单失败,请稍后再试"); return; }
+                        Zepto.dialog({
+                            titleText : '代理',
+                            contentHtml: `入单成功!`
+                        });
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>

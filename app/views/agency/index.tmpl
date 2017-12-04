@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <link rel="stylesheet" href="/vendors/swiper.min.css" />
+  <link rel="stylesheet" href="https://cdn.bootcss.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+  <link rel="stylesheet" type="text/css" href="/vendors/dialog.css" />
+  <link rel="stylesheet" type="text/css" href="/dist/agency.css" />
+  <title>代理</title>
+</head>
+
+<body>
+  <div class="container">
+    {{ $agencyId := .Account.ID }}
+    <div id="tanContainer">
+      <div id="tab">
+        <ul>
+          <li id="tab_0" onclick="changeTab('0')">产品中心</li>
+          <li id="tab_1" onclick="changeTab('1')">库存中心</li>
+          <li id="tab_2" onclick="changeTab('2')">代理中心</li>
+          <li id="tab_3" onclick="changeTab('3')">个人中心</li>
+        </ul>
+      </div>
+      <div id="tabCon">
+        <div id="tabCon_0">          <!--产品中心-->
+          <div class="swiper-container">
+            <div class="swiper-wrapper">
+              <div class="swiper-slide  swiper-slide-visible swiper-slide-active">
+                <img src="http://7xld1x.com1.z0.glb.clouddn.com/tmp_1759476266o6zAJs6e4iQOHuo7DT2vSURT-cTg82029d28dc1bdbdffd7ab4588c4bfd38.JPG"
+                  width="100%" height="180px" /></div>
+              <div class="swiper-slide"><img src="http://7xld1x.com1.z0.glb.clouddn.com/tmp_1759476266o6zAJs6e4iQOHuo7DT2vSURT-cTgc208430003b288860175f903667ee31f.JPG"
+                  width="100%" height="180px" /></div>
+              <div class="swiper-slide"><img src="http://7xld1x.com1.z0.glb.clouddn.com/tmp_1759476266o6zAJs6e4iQOHuo7DT2vSURT-cTg90b762cae3414de73fb52500a1250b44.JPG"
+                  width="100%" height="180px" /></div>
+              <div class="swiper-slide"><img src="http://7xld1x.com1.z0.glb.clouddn.com/tmp_1759476266o6zAJs6e4iQOHuo7DT2vSURT-cTga626482ed7a10da6e43054df24356b22.JPG"
+                  width="100%" height="180px" /></div>
+            </div>
+            <div class="swiper-pagination"></div>
+          </div>
+          <div class="announcement">
+            <div class="ann_image"><img src="/images/announce.png" /></div>
+            <ul id="a">
+              <li>这是公告一</li>
+              <li>这是公告二</li>
+              <li>这是公告三</li>
+              <li>这是公告四</li>
+            </ul>
+          </div>
+          <div class="fenge"></div>
+          <div class="goods_list">
+            <h4 style="color:#1c5b54;">产品列表</h4>
+            <div class="tab_bd">
+              {{ range .AgencyLevels }}
+              <div class="tab_line">
+                <div class="title_img">
+                  <a href="toExplain">
+                  {{ if .Category.MainImage }}
+                    <img src="{{ .Category.ImageUrl }}" />
+                  {{ else }}
+                    <img src="/images/default.png" />  <!--跳转到分类说明页面-->
+                  {{ end }}
+                  </a>
+                </div>
+                <div class="goods_info">
+                  <div class="Info_title">
+                    <div class="Info_type">分类: <a href="toExplain"><span>{{ .Category.Name }}</span></a></div>
+                    <div class="Info_Rank">当前等级: <a href="toExplain"><span>{{ .AgencyLevelConfig.Level }}</span></a></div>
+                  </div>
+                  {{ range .AgencyProductQuantities }}
+                  <div class="Info_title">
+                    <div class=""><span style="font-size:13px;">{{ .ProductVariation.SKU }}</span></div>
+                    <div class=""><span style="font-size:13px;">{{ .Quantity }}（库存）</span></div>
+                    <div class=""><a href="/agency/l/order_shipping/{{ $agencyId }}/{{ .ProductVariation.ID }}/{{ .ID }}"><button class="btn btn-primary">入单</button></a></div>
+                  </div>
+                  {{ end }}
+                  <!--<div class="Info_title">-->
+                    <!--<div class=""><span style="font-size:13px;">蛇油膏</span></div>-->
+                    <!--<div class=""><span style="font-size:13px;">80（今）200（剩）</span></div>-->
+                    <!--<div class=""><a href="order.html"><button class="btn btn-primary">入单</button></a></div>-->
+                  <!--</div>-->
+                </div>
+              </div>
+              {{ end }}
+            </div>
+          </div>
+        </div>
+        <div id="tabCon_1">             <!--库存中心-->
+          <div class="stock">
+            <div class="stock_operate">
+              <div class="operate_select">
+                <!--<div class="stock_select">-->
+                  <!--<select name="type" class="form-control">-->
+                    <!--<option value="1">类别一</option>-->
+                  <!--</select>-->
+                <!--</div>-->
+                <!--<div class="stock_select">-->
+                  <!--<select name="type" class="form-control">-->
+                    <!--<option value="1">产品一</option>-->
+                  <!--</select>-->
+                <!--</div>-->
+                <div class="stock_select">
+                  <select name="type" class="form-control" id="order-status">
+                    <option value="10000">全部记录</option>
+                    <option value="0">进货记录</option>
+                    <option value="1">出货记录</option>
+                  </select>
+                </div>
+              </div>
+              <div class="operate_btn">
+                <div class="datepicker"><span>日期</span></div>
+                <input  class="form-control" type="date" id="order-date" />
+                <button class="btn btn-default" onclick="searchOrders()">查询</button>
+              </div>
+            </div>
+            <div class="order_list">
+              <div class="table-responsive">
+                <table id="order-table" class="table table-striped">
+                  <thead>
+                    <tr>
+                      <th>类别</th>
+                      <th>产品</th>
+                      <th>数量</th>
+                      <th>金额</th>
+                      <th>状态</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="tabCon_2">                 <!--代理中心-->
+          <div class="agent">
+            {{ if .Account.SuperiorID }}
+              <div class="top">
+                <div class="top_title"><span style="margin-left: 5px;color:#1c5b54">我的上级</span></div>
+                <div class="top_info">
+                  <div class="info_line">
+                    <div class="info_img">
+                      {{ if .Account.Superior.AgencyAccount.AvatarUrl }}
+                      <img src="{{ .Account.Superior.AgencyAccount.AvatarUrl }}" />
+                      {{ else }}
+                      <img src="/images/def_person.png" />
+                      {{ end }}
+                    </div>
+                    <div class="info_content">
+                      <div class="content_line">
+                        <div class="content">
+                          <p>姓名: {{ .Account.Superior.Name }}</p>
+                        </div>
+                        <div class="content">
+                          <p>联系方式: {{ .Account.Superior.Phone }}</p>
+                        </div>
+                      </div>
+                      <div class="content_line">
+                        <div class="content">
+                          <p>微信: {{ .Account.Superior.Wechat }}</p>
+                        </div>
+                      </div>
+                      <!--<div class="content_line">-->
+                        <!--<div class="content">-->
+                          <!--<p>代理日期: 2017年12月1日</p>-->
+                        <!--</div>-->
+                      <!--</div>-->
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {{ end }}
+              <div class="bottom">
+                <div class="bottom_title">
+                  <span style="margin-left: 5px;color:#1c5b54">我的下级</span>
+                  <!--<div class="input-group">-->
+                    <!--<input type="text" class="form-control" placeholder="Search for..." />-->
+                    <!--<span class="input-group-btn">-->
+                      <!--<button class="btn btn-default" type="button">搜索</button>-->
+                    <!--</span>-->
+                  <!--</div>-->
+                  <!-- /input-group -->
+                </div>
+                <div class="bottom_info">
+                  {{ range .SubAgencies }}
+                  <!--<a href="product_desc.html?Num=">-->
+                    <div class="info_line">
+                      <div class="info_img">
+                        {{ if .AgencyAccount.AvatarUrl }}
+                        <img src="{{ .AgencyAccount.AvatarUrl }}" />
+                        {{ else }}
+                        <img src="/images/def_person.png" />
+                        {{ end }}
+                      </div>
+                      <div class="info_content">
+                      <div class="content_line">
+                        <div class="content">
+                          <p>姓名: {{ .Name }}</p>
+                        </div>
+                        <div class="content">
+                          <p>联系方式: {{ .Phone }}</p>
+                        </div>
+                      </div>
+                      <div class="content_line">
+                        <div class="content">
+                          <p>微信: {{ .Wechat }}</p>
+                        </div>
+                      </div>
+                      <!--<div class="content_line">-->
+                        <!--<div class="content">-->
+                          <!--<p>代理日期: 2017年12月1日</p>-->
+                        <!--</div>-->
+                      <!--</div>-->
+                        <div class="content_line">
+                          <div class="content">
+                            <p>拿货次数: {{ .PurchaseTimes }}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  <!--</a>-->
+                  {{ end }}
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="tabCon_3">
+            <div class="personal">
+              <div class="person_info">
+                <div class="person_content">
+                  <div class="content_line">
+                    <div class="content">
+                      <p>姓名: {{ .Account.Name }}</p>
+                    </div>
+                    <div class="content">
+                      <p>联系方式: {{ .Account.Phone }}</p>
+                    </div>
+                  </div>
+                  <div class="content_line">
+                    <div class="content">
+                      <p>微信: {{ .Account.Wechat }}</p>
+                    </div>
+                  </div>
+                  <!--<div class="content_line">-->
+                    <!--<div class="content">-->
+                      <!--<p>代理日期: 2017年12月1日</p>-->
+                    <!--</div>-->
+                  <!--</div>-->
+                </div>
+                <div class="person_img">
+                  {{ if .Account.AgencyAccount.AvatarUrl }}
+                  <img src="{{ .Account.AgencyAccount.AvatarUrl }}" />
+                  {{ else }}
+                  <img src="/images/def_person.png" />
+                  {{ end }}
+                </div>
+              </div>
+              <div class="material">
+                <div class="">产品素材</div>
+                <div class="icon_next">
+                  <img src="/images/next.png" />
+                </div>
+              </div>
+              <div class="question">
+                <div class="">常见问题</div>
+                <div class="icon_next">
+                  <img src="/images/next.png" />
+                </div>
+              </div>
+              <div class="complain">
+                <div class="">我要投诉</div>
+                <div class="icon_next">
+                  <img src="/images/next.png" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript" src="https://oss.ririyuedu.com/zepto.min.js"></script>
+    <script type="text/javascript" src="/vendors/dialog.js"></script>                 <!--模态框插件-->
+    <script type="text/javascript" src="/vendors/swiper-3.4.2.jquery.min.js"></script>  <!--轮播图插件-->
+
+    <script type="text/javascript">
+      //类创建函数
+      var Class = {
+        create: function () {
+          return function () {
+            this.initialize.apply(this, arguments);
+          }
+        }
+      }
+      //对象属性方法扩展
+      Function.prototype.bind = function (object) {
+        var method = this;
+        return function () {
+          method.apply(object, arguments);
+        }
+      }
+
+      // 创建类函数
+      var Scroll = Class.create();
+      Scroll.prototype = {
+        //第一个参数定义要滚动的区域,第二个参数定义每次滚动的高度
+        initialize: function (element, height, delay) {
+          this.element = $(element);
+          this.element.innerHTML += this.element.innerHTML;
+          this.height = height;
+          this.delay = delay * 1000;
+          this.maxHeight = this.element.scrollHeight / 2;
+          this.counter = 0;
+          this.scroll();
+          this.timer = "";
+          this.element.onmouseover = this.stop.bind(this);
+          this.element.onmouseout = function () { this.timer = setTimeout(this.scroll.bind(this), 1000); }.bind(this);
+        },
+        scroll: function () {
+          if (this.element.scrollTop < this.maxHeight) {
+            this.element.scrollTop++;
+            this.counter++;
+          } else {
+            this.element.scrollTop = 0;
+            this.counter = 0;
+          }
+
+          if (this.counter < this.height) {
+            this.timer = setTimeout(this.scroll.bind(this), 5);
+          } else {
+            this.counter = 0;
+            this.timer = setTimeout(this.scroll.bind(this), this.delay);
+          }
+        },
+        stop: function () {
+          clearTimeout(this.timer);
+        }
+      }
+      new Scroll('a', 30, 2);
+      //--------------------------------------------------------------------------
+
+      //改变tab页方法
+      function changeTab(tabCon_num) {
+        for (i = 0; i <= 3; i++) {
+          document.getElementById("tabCon_" + i).style.display = "none"; //将所有的层都隐藏 
+          document.getElementById("tab_" + i).style.background = "#fff";
+        }
+        document.getElementById("tabCon_" + tabCon_num).style.display = "block";//显示当前层
+        document.getElementById("tab_" + tabCon_num).style.background = "#EDEDED";
+        switch (tabCon_num) {
+          case '0':
+            document.title = '代理';
+            break;
+          case '1':
+            loadOrderData(10000, "");
+            document.title = '库存中心';
+            break;
+          case '2':
+            document.title = '代理中心';
+            break;
+          case '3':
+            document.title = '个人中心';
+            break;
+        }
+      }
+
+      //根据点击的列表的id显示不同的数据（库存中心）
+      function openmore(contactName, phone, address, express, tracking) {
+        Zepto.dialog({
+          titleText : '快递详情',
+          contentHtml:`<div class='desc'>
+                        <div class="desc_line"><div class="desc_content">名字: </div>` + contactName + `</div>
+                        <div class="desc_line"><div class="desc_content">电话: </div>` + phone + `</div>
+                        <div class="desc_line"><div class="desc_content">地址: </div>` + address + `</div>
+                        <div class="desc_line"><div class="desc_content">快递: </div>` + express + `</div>
+                        <div class="desc_line"><div class="desc_content">快递单号: </div>` + tracking + `</div>
+                       </div>`
+        });
+      }
+
+      function searchOrders() {
+        loadOrderData(parseInt($("#order-status").val()), $("#order-date").val())
+      }
+
+      // 加载订单数据
+      function loadOrderData(orderStatus, orderDate) {
+        $.ajax({
+          type: 'POST',
+          url: '/agency/api/orders',
+          dataType: 'json',
+          data: JSON.stringify({agencyId: {{.Account.ID}}, orderStatus: orderStatus, orderDate: orderDate}),
+          success: function(data) {
+            if(data.code != 0) { alert("加载失败,请稍后再试"); return; }
+            if(!data.data || data.data.length === 0) { $('#order-table tbody').html([]); return; }
+            $('#order-table tbody').html("");
+            $(data.data).each(function(idx, item) {
+              $(item.AgencyOrderItems).each(function(idx2, item2) {
+                if(item2.OrderStatus == 0) {
+                  var row = `<tr onclick="openmore('` + item.ShippingAddress.ContactName + `','` + item.ShippingAddress.Phone + `','` + item.ShippingAddress.AddressDetail + `','` + item.Express + `','` + item.TrackingNumber + `')">
+                              <td>` + item2.ProductVariation.Product.Category.Name + `</td>
+                              <td>` + item2.ProductVariation.SKU + `</td>
+                              <td>` + item2.Quantity + `</td>
+                              <td>` + item2.Price + `</td>
+                              <td>进货</td></tr>`;
+                } else {
+                  var row = `<tr onclick="openmore('` + item.ShippingAddress.ContactName + `','` + item.ShippingAddress.Phone + `','` + item.ShippingAddress.AddressDetail + `','` + item.Express + `','` + item.TrackingNumber + `')">
+                              <td>` + item2.ProductVariation.Product.Category.Name + `</td>
+                              <td>` + item2.ProductVariation.SKU + `</td>
+                              <td>` + item2.Quantity + `</td>
+                              <td>` + item2.Price + `</td>
+                              <td>出货</td></tr>`;
+                }
+                $("#order-table tbody").append(row);
+              });
+            });
+          }
+        });
+      }
+
+      //创建轮播图（产品中心）
+      window.onload = function () {
+        var mySwiper = new Swiper('.swiper-container', {
+          pagination: '.swiper-pagination',
+          paginationClickable: true,
+          spaceBetween: 30,
+          centeredSlides: true,
+          autoplay: 2500,
+          speed: 500,
+          observer: true,
+          observeParents: true,
+          autoplayDisableOnInteraction: false
+        })
+      }
+    </script>
+</body>
+
+</html>

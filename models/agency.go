@@ -11,7 +11,7 @@ type Agency struct {
 	gorm.Model
 
 	Name             string `form:"name"`
-	Phone            string
+	Phone            string `gorm:"unique_index:uni_agency_phone"`
 	IDCardNumber     string
 	Wechat           string
 	SuperiorID       uint
@@ -20,8 +20,11 @@ type Agency struct {
 	LastPurchaseTime *time.Time
 	Seller           string
 
-	AgencyLevels []AgencyLevel
+	AgencyLevels      []AgencyLevel
 	SubordinateAgency []Agency
+	
+	AgencyAccountID uint `gorm:"unique_index:uni_agency_account"`
+	AgencyAccount   AgencyAccount
 }
 
 type AgencyProductQuantity struct {

@@ -62,10 +62,10 @@
                 } 
             ,3000);
 
-            if(!errmsg){             // 填写信息正确后执行
+            if(!errmsg){ // 填写信息正确后执行
                 $.ajax({
                     type: 'POST',
-                    url: '/agency/api/order_shipping',
+                    url: '/agency/api/sign',
                     dataType: 'json',
                     data: JSON.stringify({
                         appId: {{ .SignInfo.AppId }},

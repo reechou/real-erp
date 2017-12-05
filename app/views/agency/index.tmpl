@@ -268,6 +268,13 @@
                   <img src="/images/next.png" />
                 </div>
               </div>
+              <div class="question" onclick="copyAgencyLink()">
+                <a style="display: none" id="agency-link">http://www.baidu.com</a>
+                <div>复制代理链接</div>
+                <div class="icon_next">
+                  <img src="/images/next.png" />
+                </div>
+              </div>
               <div class="complain">
                 <div class="">我要投诉</div>
                 <div class="icon_next">
@@ -416,6 +423,15 @@
             });
           }
         });
+      }
+
+      function copyAgencyLink() {
+        var copyDOM = document.querySelector('#agency-link');
+        var range = document.createRange();
+        range.selectNode(copyDOM);
+        window.getSelection().addRange(range);
+        var successful = document.execCommand('copy');
+        alert(successful);
       }
 
       //创建轮播图（产品中心）
